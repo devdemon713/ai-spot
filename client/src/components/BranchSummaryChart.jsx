@@ -48,7 +48,7 @@ function BranchSummaryChart({ branches, flashId, vacantOnly = false }) {
               background: '#FFFF00', color: '#000', fontWeight: 800, fontSize: '13px',
               padding: '5px 16px', borderRadius: '3px', border: '1.5px solid #ccc', whiteSpace: 'nowrap'
             }}>
-              Total Vacant CAP Seats: {grandTotal}
+              ALL INDIA SEAT FOR ACAP ROUND: {grandTotal}
             </div>
           </div>
         </div>
