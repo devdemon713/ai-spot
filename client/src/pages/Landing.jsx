@@ -171,72 +171,7 @@ function Landing() {
             <li>Seat availability shown below updates in <strong>real-time</strong> as allocations are made.</li>
           </ol>
         </div>
-{/*
-  {/* Stats Summary */} 
-  <div className="stats-grid"> 
-    <div className="stat-card"> 
-      <div className="stat-icon" style={{ background: 'var(--primary-light)', color: 'var(--primary)' }}>🎓</div> 
-      <div className="stat-value">{branches.length}</div> 
-      <div className="stat-label">Total Branches</div> 
-    </div> 
-    <div className="stat-card"> 
-      <div className="stat-icon" style={{ background: 'var(--success-light)', color: 'var(--success)' }}>💺</div> 
-      <div className="stat-value">{totalVacant}</div> 
-      <div className="stat-label">Total Vacant Seats</div> 
-    </div> 
-    <div className="stat-card"> 
-      <div className="stat-icon" style={{ background: 'var(--info-light)', color: 'var(--info)' }}>🏛️</div> 
-      <div className="stat-value">{aidedCount}</div> 
-      <div className="stat-label">Aided Branches</div> 
-    </div> 
-    <div className="stat-card"> 
-      <div className="stat-icon" style={{ background: 'var(--warning-light)', color: 'var(--warning)' }}>🏢</div> 
-      <div className="stat-value">{unaidedCount}</div> 
-      <div className="stat-label">Unaided Branches</div> 
-    </div> 
-  </div> 
- 
-  {/* Filter + CTA */} 
-  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}> 
-    <div className="toggle-wrapper"> 
-      <button 
-        className={`toggle-btn ${filter === 'all' ? 'active' : ''}`} 
-        onClick={() => setFilter('all')} 
-      >
-        All Branches
-      </button> 
-
-      <button 
-        className={`toggle-btn ${filter === 'Aided' ? 'active' : ''}`} 
-        onClick={() => setFilter('Aided')} 
-      >
-        Aided
-      </button> 
-
-      <button 
-        className={`toggle-btn ${filter === 'Unaided' ? 'active' : ''}`} 
-        onClick={() => setFilter('Unaided')} 
-      >
-        Unaided
-      </button> 
-    </div> 
-  </div> 
- 
-  {/* Seat Matrices */} 
-  {filteredBranches.map(branch => ( 
-    <SeatMatrix 
-      key={branch._id} 
-      branch={branch} 
-      flashId={flashId} 
-    /> 
-  ))} 
- 
-  {filteredBranches.length === 0 && ( 
-    <div className="alert alert-info">
-      No branches found for the selected filter.
-    </div> 
-  )}
-*/
+        
 
 
         {/* Legend */}
