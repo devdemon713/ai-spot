@@ -9,7 +9,7 @@ import TeaBreakOverlay from '../components/animations/TeaBreakOverlay';
 import LunchBreakOverlay from '../components/animations/LunchBreakOverlay';
 import { playBreakBell, playNotificationSound, playUrgentSound } from '../components/animations/portalSounds';
 
-const youtubeVideoId = import.meta.env.VITE_YOUTUBE_VIDEO_ID || 'e1628RDUFFs';
+const youtubeVideoId = import.meta.env.VITE_YOUTUBE_VIDEO_ID || 'yAigrYKjwGQ';
 
 function Landing() {
   const [branches, setBranches] = useState([]);
