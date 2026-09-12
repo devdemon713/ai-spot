@@ -21,7 +21,7 @@ function getDefTotal(branch) {
   ) + (branch.defCommonReserved || 0);
 }
 
-function BranchSummaryChart({ branches, flashId }) {
+function BranchSummaryChart({ branches, flashId, vacantOnly = false }) {
   if (!branches || branches.length === 0) return null;
 
   const grandTotal = branches.reduce((s, b) => s + (b.totalVacant || 0), 0);
@@ -40,18 +40,17 @@ function BranchSummaryChart({ branches, flashId }) {
         marginBottom: '10px', flexWrap: 'wrap', gap: '8px'
       }}>
         <div>
-          <h2 id="branch-chart-title" style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
-            📊 Live Vacancy Summary — All Branches
-          </h2>
-          <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '2px 0 0' }}>
-            Updates in real-time as admin changes seat counts
-          </p>
-        </div>
-        <div style={{
-          background: '#FFFF00', color: '#000', fontWeight: 800, fontSize: '13px',
-          padding: '5px 16px', borderRadius: '3px', border: '1.5px solid #ccc', whiteSpace: 'nowrap'
-        }}>
-          Total Vacant CAP Seats: {grandTotal}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '18px', flexWrap: 'wrap' }}>
+            <h2 id="branch-chart-title" style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+              📊 Live Vacancy Summary — All Branches
+            </h2>
+            <div style={{
+              background: '#FFFF00', color: '#000', fontWeight: 800, fontSize: '13px',
+              padding: '5px 16px', borderRadius: '3px', border: '1.5px solid #ccc', whiteSpace: 'nowrap'
+            }}>
+              Total Vacant CAP Seats: {grandTotal}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -59,16 +58,20 @@ function BranchSummaryChart({ branches, flashId }) {
       <div style={{
         overflowX: 'auto', WebkitOverflowScrolling: 'touch',
         borderRadius: '8px', border: '1px solid #D0D0D0',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+        width: vacantOnly ? 'fit-content' : 'auto',
+        maxWidth: '100%'
       }}>
         <table style={{
-          width: '100%', borderCollapse: 'collapse', fontSize: '11px',
-          background: '#fff', minWidth: `${340 + CATEGORIES.length * 54}px`
+          width: vacantOnly ? 'max-content' : '100%',
+          borderCollapse: 'collapse', fontSize: '11px',
+          background: '#fff',
+          minWidth: vacantOnly ? 0 : `${340 + CATEGORIES.length * 54}px`
         }}>
           <thead>
             {/* College header */}
             <tr>
-              <td colSpan={4 + CATEGORIES.length * 2 + 2} style={{
+              <td colSpan={4 + (vacantOnly ? 0 : CATEGORIES.length * 2) + 2} style={{
                 background: '#fff', padding: '8px 12px',
                 borderBottom: '2px solid #8B1A1A', fontSize: '13px'
               }}>
@@ -89,18 +92,18 @@ function BranchSummaryChart({ branches, flashId }) {
               <th style={{ ...th, textAlign: 'left', minWidth: '120px', maxWidth: '140px' }} rowSpan={2}>Branch / Course</th>
               <th style={{ ...th, minWidth: '55px', maxWidth: '65px' }} rowSpan={2}>Type</th>
               <th style={{ ...th, minWidth: '36px' }} rowSpan={2}>SI</th>
-              {CATEGORIES.map(cat => (
+              {!vacantOnly && CATEGORIES.map(cat => (
                 <th key={cat} style={{ ...th, borderBottom: '1px solid #CCC' }} colSpan={2}>
                   {CAT_LABELS[cat]}
                 </th>
               ))}
-              <th style={{ ...th, background: '#FFF9E6', minWidth: '52px' }} rowSpan={2}>TOTAL<br />(G+L)</th>
+              {!vacantOnly && <th style={{ ...th, background: '#FFF9E6', minWidth: '52px' }} rowSpan={2}>TOTAL<br />(G+L)</th>}
               <th style={{ ...th, background: '#FFFF00', color: '#000', minWidth: '70px', fontSize: '13px' }} rowSpan={2}>VACANT</th>
             </tr>
 
             {/* G / L sub-headers */}
             <tr style={{ background: '#F8F8F8' }}>
-              {CATEGORIES.map(cat => (
+              {!vacantOnly && CATEGORIES.map(cat => (
                 <React.Fragment key={cat}>
                   <th style={{ ...th, color: '#555', fontSize: '10px', fontWeight: 700 }}>G</th>
                   <th style={{ ...th, color: '#D97706', fontSize: '10px', fontWeight: 700 }}>L</th>
@@ -150,7 +153,7 @@ function BranchSummaryChart({ branches, flashId }) {
                   <td style={{ ...td, color: '#666' }}>{branch.sanctionedIntake || '—'}</td>
 
                   {/* G / L per category */}
-                  {CATEGORIES.map(cat => {
+                  {!vacantOnly && CATEGORIES.map(cat => {
                     const g = getG(branch, cat);
                     const l = getL(branch, cat);
                     return (
@@ -178,9 +181,9 @@ function BranchSummaryChart({ branches, flashId }) {
                   })}
 
                   {/* State Level Total */}
-                  <td style={{ ...td, background: '#FFF9E6', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  {!vacantOnly && <td style={{ ...td, background: '#FFF9E6', fontWeight: 700, color: 'var(--text-primary)' }}>
                     {rowTotal}
-                  </td>
+                  </td>}
 
                   {/* Overall Vacant + PWD/DEF breakdown */}
                   {(() => {

@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import SeatMatrix from '../components/SeatMatrix';
+import BranchSummaryChart from '../components/BranchSummaryChart';
 
 const CAT_LABELS = {
   OPEN: 'OPEN', SC: 'SC', ST: 'ST', VJ_DT: 'VJ/DT',
@@ -440,6 +441,8 @@ function AdminDashboard() {
               <div className="stat-label">Vacant Seats</div>
             </div>
           </div>
+
+          <BranchSummaryChart branches={branches} vacantOnly />
 
           {/* Round Status */}
           <div className="card" style={{ marginBottom: '20px' }}>
