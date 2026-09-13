@@ -165,7 +165,7 @@ router.post('/upgrade', auth, adminOnly, async (req, res) => {
     const toBranch = await Branch.findById(toBranchId);
     if (!toBranch) return res.status(404).json({ message: 'Target (TO) branch not found' });
 
-    const isSponsored = student.candidateType === 'Sponsored' || student.isSponsored === true;
+    const isSponsored = student.candidateType === 'Sponsored' || student.candidateType === 'Experienced With Sponsorship' || student.isSponsored === true;
     const defaultPool = isSponsored ? 'sponsoredSeats' : 'nonSponsoredSeats';
 
     const toPool = toSeatPool || defaultPool;
@@ -260,7 +260,7 @@ router.post('/manual', auth, adminOnly, async (req, res) => {
       return res.status(400).json({ message: 'Student already has an active allocation' });
     }
 
-    const pool = seatPool || (student.candidateType === 'Sponsored' || student.isSponsored ? 'sponsoredSeats' : 'nonSponsoredSeats');
+    const pool = seatPool || (student.candidateType === 'Sponsored' || student.candidateType === 'Experienced With Sponsorship' || student.isSponsored ? 'sponsoredSeats' : 'nonSponsoredSeats');
     const branch = await decrementSeat(branchId, pool, seatCategory, seatType);
 
     const allocation = new Allocation({
@@ -331,7 +331,7 @@ router.post('/auto', auth, adminOnly, async (req, res) => {
       const eligibleBranches = branches;
       let allocated = false;
 
-      const isSponsored = student.candidateType === 'Sponsored' || student.isSponsored === true;
+      const isSponsored = student.candidateType === 'Sponsored' || student.candidateType === 'Experienced With Sponsorship' || student.isSponsored === true;
       const targetPool = isSponsored ? 'sponsoredSeats' : 'nonSponsoredSeats';
 
       for (const branch of eligibleBranches) {

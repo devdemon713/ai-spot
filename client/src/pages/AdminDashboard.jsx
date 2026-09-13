@@ -67,11 +67,16 @@ function AdminDashboard() {
 
   // Manual student picker filters
   const [manualStudentSearch, setManualStudentSearch] = useState('');
+  const [manualSearchBy, setManualSearchBy] = useState('name'); // 'name' | 'appId' | 'merit'
+  const [manualQuotaFilter, setManualQuotaFilter] = useState('all'); // 'all' | 'Non-Sponsored' | 'Sponsored'
   const [manualCatFilter, setManualCatFilter] = useState('all');
 
   // Branch Upgrade state
   const [upgradeStudent, setUpgradeStudent] = useState('');
   const [upgradeStudentSearch, setUpgradeStudentSearch] = useState('');
+  const [upgradeSearchBy, setUpgradeSearchBy] = useState('name'); // 'name' | 'appId' | 'merit'
+  const [upgradeQuotaFilter, setUpgradeQuotaFilter] = useState('all'); // 'all' | 'Non-Sponsored' | 'Sponsored'
+  const [upgradeCatFilter, setUpgradeCatFilter] = useState('all');
   const [upgradeFromBranch, setUpgradeFromBranch] = useState('');
   const [upgradeFromCat, setUpgradeFromCat] = useState('OPEN');
   const [upgradeFromType, setUpgradeFromType] = useState('general');
@@ -82,6 +87,7 @@ function AdminDashboard() {
 
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterQuota, setFilterQuota] = useState(''); // '' | 'Non-Sponsored' | 'Sponsored'
   const [filterCategory, setFilterCategory] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
 
@@ -239,20 +245,26 @@ function AdminDashboard() {
       showMsg('From Branch and To Branch must be different');
       return;
     }
-    if (!window.confirm('Confirm Branch Upgrade?\n\n' +
-      '• FROM branch seat → +1 (returned to pool, live)\n' +
-      '• TO branch seat → -1 (new allocation, live)\n\n' +
+
+    const stObj = students.find(s => s._id === upgradeStudent);
+    const isSpon = stObj?.candidateType === 'Sponsored' || stObj?.isSponsored;
+    const pool = isSpon ? 'sponsoredSeats' : 'nonSponsoredSeats';
+
+    if (!window.confirm(`Confirm Branch Upgrade for ${stObj?.fullName || 'student'}?\n\n` +
+      `• FROM branch seat → +1 (returned to ${isSpon ? 'Sponsored' : 'Non-Sponsored'} pool, live)\n` +
+      `• TO branch seat → -1 (allocated from ${isSpon ? 'Sponsored' : 'Non-Sponsored'} pool, live)\n\n` +
       'This is visible to all students in real-time.')) return;
+
     setUpgrading(true);
     try {
       const res = await axios.post('/api/allocation/upgrade', {
         studentId: upgradeStudent,
         fromBranchId: upgradeFromBranch,
-        fromSeatPool: 'stateLevel',
+        fromSeatPool: pool,
         fromSeatCategory: upgradeFromCat,
         fromSeatType: upgradeFromType,
         toBranchId: upgradeToBranch,
-        toSeatPool: 'stateLevel',
+        toSeatPool: pool,
         toSeatCategory: upgradeToCat,
         toSeatType: upgradeToType
       });
@@ -308,13 +320,57 @@ function AdminDashboard() {
     }
   };
 
-  // Filtered students
+  const pendingStudents = students.filter(s => s.allocationStatus === 'pending');
+
+  // Helper: Sort students by merit (Percentile -> Score -> SSC Aggregate)
+  const sortMeritList = (list) => [...list].sort((a, b) => {
+    if ((b.mhtCetPercentile || 0) !== (a.mhtCetPercentile || 0)) {
+      return (b.mhtCetPercentile || 0) - (a.mhtCetPercentile || 0);
+    }
+    if ((b.mhtCetScore || 0) !== (a.mhtCetScore || 0)) {
+      return (b.mhtCetScore || 0) - (a.mhtCetScore || 0);
+    }
+    return (b.sscAggregate || 0) - (a.sscAggregate || 0);
+  });
+
+  // Independent Merit Rank Maps for Non-Sponsored and Sponsored candidates
+  const nonSponsoredMeritMap = new Map();
+  sortMeritList(students.filter(s => s.candidateType !== 'Sponsored' && !s.isSponsored))
+    .forEach((s, idx) => nonSponsoredMeritMap.set(s._id.toString(), idx + 1));
+
+  const sponsoredMeritMap = new Map();
+  sortMeritList(students.filter(s => s.candidateType === 'Sponsored' || s.isSponsored))
+    .forEach((s, idx) => sponsoredMeritMap.set(s._id.toString(), idx + 1));
+
+  // Overall fallback rank map
+  const overallMeritMap = new Map();
+  sortMeritList(students).forEach((s, idx) => overallMeritMap.set(s._id.toString(), idx + 1));
+
+  // Helper to get a candidate's independent quota merit rank (Rank 1, 2, 3...)
+  const getCandidateRank = (s) => {
+    if (!s) return 1;
+    const isSpon = s.candidateType === 'Sponsored' || s.isSponsored;
+    if (isSpon) {
+      return sponsoredMeritMap.get(s._id.toString()) || overallMeritMap.get(s._id.toString()) || 1;
+    }
+    return nonSponsoredMeritMap.get(s._id.toString()) || overallMeritMap.get(s._id.toString()) || 1;
+  };
+
+  // Filtered students (for Students tab & export)
   const filteredStudents = students.filter(s => {
+    const isSpon = s.candidateType === 'Sponsored' || s.isSponsored;
+
+    if (filterQuota === 'Non-Sponsored' && isSpon) return false;
+    if (filterQuota === 'Sponsored' && !isSpon) return false;
+
     if (searchTerm) {
-      const term = searchTerm.toLowerCase();
+      const term = searchTerm.trim().toLowerCase();
+      const rank = getCandidateRank(s);
       if (!s.fullName.toLowerCase().includes(term) &&
         !s.applicationId.toLowerCase().includes(term) &&
-        !s.email.toLowerCase().includes(term)) return false;
+        !s.email.toLowerCase().includes(term) &&
+        String(rank) !== term &&
+        !String(rank).startsWith(term)) return false;
     }
     if (filterCategory && s.category !== filterCategory) return false;
     if (filterStatus && s.allocationStatus !== filterStatus) return false;
@@ -323,29 +379,33 @@ function AdminDashboard() {
 
   const handleExportStudents = () => {
     const headers = [
-      'Application ID', 'Full Name', 'Email', 'Phone', 'MHT-CET Percentile',
+      'Application ID', 'Full Name', 'Email', 'Phone', 'Quota Merit Rank', 'MHT-CET Percentile',
       'MHT-CET Score', 'JEE Main Percentile', 'Category', 'Gender',
-      'Student Type', 'Status', 'Allocated Branch', 'Branch Type'
+      'Quota Type', 'Status', 'Allocated Branch', 'Branch Type'
     ];
     const escapeCsvValue = (value) => {
       const text = value == null ? '' : String(value);
       return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
     };
-    const rows = filteredStudents.map(student => [
-      student.applicationId,
-      student.fullName,
-      student.email,
-      student.phone,
-      student.mhtCetPercentile,
-      student.mhtCetScore,
-      student.jeeMainPercentile,
-      normalizeCat(student.category),
-      student.gender,
-      student.studentType,
-      student.allocationStatus,
-      student.allocatedBranch?.name || '',
-      student.allocatedBranch?.type || ''
-    ]);
+    const rows = filteredStudents.map(student => {
+      const isSpon = student.candidateType === 'Sponsored' || student.isSponsored;
+      return [
+        student.applicationId,
+        student.fullName,
+        student.email,
+        student.phone,
+        `${isSpon ? 'Sponsored' : 'Non-Sponsored'} Rank #${getCandidateRank(student)}`,
+        student.mhtCetPercentile,
+        student.mhtCetScore,
+        student.jeeMainPercentile,
+        normalizeCat(student.category),
+        student.gender,
+        isSpon ? 'Sponsored' : 'Non-Sponsored',
+        student.allocationStatus,
+        student.allocatedBranch?.name || '',
+        student.allocatedBranch?.type || ''
+      ];
+    });
     const csv = [headers, ...rows]
       .map(row => row.map(escapeCsvValue).join(','))
       .join('\n');
@@ -361,24 +421,63 @@ function AdminDashboard() {
     showMsg(`✅ Exported ${filteredStudents.length} students to Excel-compatible CSV.`);
   };
 
-  const pendingStudents = students.filter(s => s.allocationStatus === 'pending');
-
   // Get current round ID for skip filtering
   const currentRoundId = round?._id;
 
-  // Pending students filtered by search + category + NOT skipped in current round
-  // Sorted high→low percentile (MHT-CET merit rule)
+  // Pending students filtered by Quota + Search mode + Category + NOT skipped in current round
   const filteredPendingStudents = pendingStudents
     .filter(s => {
-      // Filter out students skipped in current round
+      const isSpon = s.candidateType === 'Sponsored' || s.isSponsored;
       if (currentRoundId && s.skippedInRounds && s.skippedInRounds.includes(currentRoundId)) return false;
+
+      // Quota Filter (Non-Sponsored vs Sponsored)
+      if (manualQuotaFilter === 'Non-Sponsored' && isSpon) return false;
+      if (manualQuotaFilter === 'Sponsored' && !isSpon) return false;
+
+      // Category Filter
       if (manualCatFilter !== 'all' && normalizeCat(s.category) !== normalizeCat(manualCatFilter)) return false;
+
+      // Search Filter
       if (manualStudentSearch) {
-        const term = manualStudentSearch.toLowerCase();
-        const name = (s.fullName || '').toLowerCase();
-        const appId = (s.applicationId || '').toLowerCase();
-        const phone = (s.phone || '').toLowerCase();
-        return name.includes(term) || appId.includes(term) || phone.includes(term);
+        const term = manualStudentSearch.trim().toLowerCase();
+        if (manualSearchBy === 'name') {
+          return (s.fullName || '').toLowerCase().includes(term);
+        } else if (manualSearchBy === 'appId') {
+          return (s.applicationId || '').toLowerCase().includes(term);
+        } else if (manualSearchBy === 'merit') {
+          const rank = getCandidateRank(s);
+          return String(rank) === term || String(rank).startsWith(term);
+        }
+        return (s.fullName || '').toLowerCase().includes(term) || (s.applicationId || '').toLowerCase().includes(term);
+      }
+      return true;
+    })
+    .sort((a, b) => (b.mhtCetPercentile || 0) - (a.mhtCetPercentile || 0));
+
+  // Branch upgrade students filtered by Quota + Search mode + Category
+  const filteredUpgradeStudents = students
+    .filter(s => {
+      const isSpon = s.candidateType === 'Sponsored' || s.isSponsored;
+
+      // Quota Filter (Non-Sponsored vs Sponsored)
+      if (upgradeQuotaFilter === 'Non-Sponsored' && isSpon) return false;
+      if (upgradeQuotaFilter === 'Sponsored' && !isSpon) return false;
+
+      // Category Filter
+      if (upgradeCatFilter !== 'all' && normalizeCat(s.category) !== normalizeCat(upgradeCatFilter)) return false;
+
+      // Search Filter
+      if (upgradeStudentSearch) {
+        const term = upgradeStudentSearch.trim().toLowerCase();
+        if (upgradeSearchBy === 'name') {
+          return (s.fullName || '').toLowerCase().includes(term);
+        } else if (upgradeSearchBy === 'appId') {
+          return (s.applicationId || '').toLowerCase().includes(term);
+        } else if (upgradeSearchBy === 'merit') {
+          const rank = getCandidateRank(s);
+          return String(rank) === term || String(rank).startsWith(term);
+        }
+        return (s.fullName || '').toLowerCase().includes(term) || (s.applicationId || '').toLowerCase().includes(term);
       }
       return true;
     })
@@ -546,11 +645,16 @@ function AdminDashboard() {
           <div className="filters-bar">
             <input
               type="text"
-              placeholder="Search by name, App ID, or email..."
+              placeholder="Search by name, App ID, email, or merit rank #..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{ flex: 1, minWidth: '200px' }}
             />
+            <select value={filterQuota} onChange={(e) => setFilterQuota(e.target.value)}>
+              <option value="">All Quotas</option>
+              <option value="Non-Sponsored">Non-Sponsored Quota</option>
+              <option value="Sponsored">Sponsored Quota</option>
+            </select>
             <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
               <option value="">All Categories</option>
               {Object.entries(CAT_LABELS).map(([k, v]) => (
@@ -583,8 +687,10 @@ function AdminDashboard() {
               <table className="data-table">
                 <thead>
                   <tr>
+                    <th>Merit Rank</th>
                     <th>App ID</th>
                     <th>Name</th>
+                    <th>Quota Type</th>
                     <th>Percentile</th>
                     <th>Category</th>
                     <th>Gender</th>
@@ -594,20 +700,44 @@ function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredStudents.map(s => (
-                    <tr key={s._id}>
-                      <td style={{ fontWeight: 600, color: 'var(--primary)' }}>{s.applicationId}</td>
-                      <td>{s.fullName}</td>
-                      <td style={{ fontWeight: 700 }}>{s.mhtCetPercentile}</td>
-                      <td>{normalizeCat(s.category)}</td>
-                      <td>{s.gender}</td>
-                      <td>{s.studentType}</td>
-                      <td><span className={`badge badge-${s.allocationStatus}`}>{s.allocationStatus}</span></td>
-                      <td>{s.allocatedBranch ? `${s.allocatedBranch.name} (${s.allocatedBranch.type})` : '—'}</td>
-                    </tr>
-                  ))}
+                  {filteredStudents.map(s => {
+                    const isSpon = s.candidateType === 'Sponsored' || s.isSponsored;
+                    const rank = getCandidateRank(s);
+                    return (
+                      <tr key={s._id}>
+                        <td>
+                          <span style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '4px',
+                            padding: '3px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 800,
+                            background: isSpon ? '#EFF6FF' : '#FFF0F0',
+                            color: isSpon ? '#1D4ED8' : '#8B1A1A',
+                            border: isSpon ? '1px solid #BFDBFE' : '1px solid #F5BBBB'
+                          }}>
+                            {isSpon ? '💼 SP' : '🎓 NS'} Rank #{rank}
+                          </span>
+                        </td>
+                        <td style={{ fontWeight: 600, color: 'var(--primary)' }}>{s.applicationId}</td>
+                        <td>{s.fullName}</td>
+                        <td>
+                          <span style={{
+                            fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '12px',
+                            background: isSpon ? '#EFF6FF' : '#F0FDF4',
+                            color: isSpon ? '#1D4ED8' : '#15803D'
+                          }}>
+                            {isSpon ? 'Sponsored' : 'Non-Sponsored'}
+                          </span>
+                        </td>
+                        <td style={{ fontWeight: 700 }}>{s.mhtCetPercentile}</td>
+                        <td>{normalizeCat(s.category)}</td>
+                        <td>{s.gender}</td>
+                        <td>{s.studentType}</td>
+                        <td><span className={`badge badge-${s.allocationStatus}`}>{s.allocationStatus}</span></td>
+                        <td>{s.allocatedBranch ? `${s.allocatedBranch.name} (${s.allocatedBranch.type})` : '—'}</td>
+                      </tr>
+                    );
+                  })}
                   {filteredStudents.length === 0 && (
-                    <tr><td colSpan="8" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No students found</td></tr>
+                    <tr><td colSpan="10" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No students found</td></tr>
                   )}
                 </tbody>
               </table>
@@ -647,15 +777,65 @@ function AdminDashboard() {
                   <div className="form-group full-width">
                     <label>Select Student <span className="required">*</span></label>
 
-                    {/* Filters */}
+                    {/* Radio Options: Search by Name / Application ID / Merit No. */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '8px', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                      <span style={{ color: 'var(--text-muted)', fontWeight: 700 }}>Search by:</span>
+                      <label style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                        <input
+                          type="radio"
+                          name="manualSearchBy"
+                          value="name"
+                          checked={manualSearchBy === 'name'}
+                          onChange={() => setManualSearchBy('name')}
+                        />
+                        Name
+                      </label>
+                      <label style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                        <input
+                          type="radio"
+                          name="manualSearchBy"
+                          value="appId"
+                          checked={manualSearchBy === 'appId'}
+                          onChange={() => setManualSearchBy('appId')}
+                        />
+                        Application ID
+                      </label>
+                      <label style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                        <input
+                          type="radio"
+                          name="manualSearchBy"
+                          value="merit"
+                          checked={manualSearchBy === 'merit'}
+                          onChange={() => setManualSearchBy('merit')}
+                        />
+                        Merit No.
+                      </label>
+                    </div>
+
+                    {/* Search Input + Candidate Quota Filter + Category Filter */}
                     <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
+                      <select
+                        value={manualQuotaFilter}
+                        onChange={e => { setManualQuotaFilter(e.target.value); setSelectedStudent(''); }}
+                        style={{ flex: 1, minWidth: '140px', padding: '8px 12px', border: '1.5px solid #8B1A1A', borderRadius: 'var(--radius-sm)', fontSize: '13px', fontWeight: 700, fontFamily: 'inherit', background: '#FFF8F8', color: '#8B1A1A' }}
+                      >
+                        <option value="all">All Quotas</option>
+                        <option value="Non-Sponsored">Non-Sponsored Quota</option>
+                        <option value="Sponsored">Sponsored Quota</option>
+                      </select>
+
                       <input
                         type="text"
-                        placeholder="🔍 Search name or application ID…"
+                        placeholder={
+                          manualSearchBy === 'name' ? '🔍 Search by name…' :
+                          manualSearchBy === 'appId' ? '🔍 Search by Application ID…' :
+                          `🔍 Search by ${manualQuotaFilter === 'Sponsored' ? 'Sponsored' : manualQuotaFilter === 'Non-Sponsored' ? 'Non-Sponsored' : 'Merit'} Rank #…`
+                        }
                         value={manualStudentSearch}
                         onChange={e => { setManualStudentSearch(e.target.value); setSelectedStudent(''); }}
                         style={{ flex: 2, minWidth: '160px', padding: '8px 12px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', fontSize: '13px', fontFamily: 'inherit' }}
                       />
+
                       <select
                         value={manualCatFilter}
                         onChange={e => { setManualCatFilter(e.target.value); setSelectedStudent(''); }}
@@ -677,6 +857,7 @@ function AdminDashboard() {
                       ) : (
                         filteredPendingStudents.map((s, idx) => {
                           const isSel = selectedStudent === s._id;
+                          const isSpon = s.candidateType === 'Sponsored' || s.isSponsored;
                           return (
                             <div
                               key={s._id}
@@ -689,15 +870,16 @@ function AdminDashboard() {
                                 transition: 'all 0.18s ease'
                               }}
                             >
-                              {/* Rank circle */}
+                              {/* Independent Quota Merit Rank circle */}
                               <span
                                 onClick={() => setSelectedStudent(isSel ? '' : s._id)}
+                                title={`${isSpon ? 'Sponsored' : 'Non-Sponsored'} Merit Rank #${getCandidateRank(s)}`}
                                 style={{
                                   minWidth: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer',
-                                  background: isSel ? 'rgba(255,255,255,0.2)' : '#8B1A1A',
+                                  background: isSel ? 'rgba(255,255,255,0.2)' : isSpon ? '#2563EB' : '#8B1A1A',
                                   color: '#fff', fontSize: '11px', fontWeight: 800,
                                   display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-                                }}>{idx + 1}</span>
+                                }}>{getCandidateRank(s)}</span>
 
                               {/* Name + AppID + badges */}
                               <div
@@ -708,6 +890,7 @@ function AdminDashboard() {
                                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center', marginTop: '4px' }}>
                                   <span style={{ fontSize: '11px', opacity: isSel ? 0.8 : 0.5 }}>{s.applicationId}</span>
                                   <span style={{ opacity: 0.3 }}>·</span>
+                                  <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '20px', background: isSel ? 'rgba(255,255,255,0.25)' : isSpon ? '#EFF6FF' : '#F0FDF4', color: isSel ? '#fff' : isSpon ? '#1D4ED8' : '#15803D', border: isSel ? '1px solid rgba(255,255,255,0.4)' : isSpon ? '1px solid #BFDBFE' : '1px solid #BBF7D0' }}>{isSpon ? '💼 Sponsored' : '🎓 Non-Sponsored'}</span>
                                   <span style={{ fontSize: '11px', fontWeight: 800, padding: '2px 8px', borderRadius: '20px', background: isSel ? 'rgba(255,255,255,0.25)' : '#FFF0F0', color: isSel ? '#fff' : '#8B1A1A', border: isSel ? '1px solid rgba(255,255,255,0.4)' : '1px solid #F5BBBB' }}>📊 {s.mhtCetPercentile}%ile</span>
                                   <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '20px', background: isSel ? 'rgba(255,255,255,0.25)' : '#FFFBEB', color: isSel ? '#fff' : '#B45309', border: isSel ? '1px solid rgba(255,255,255,0.4)' : '1px solid #FCD34D' }}>{normalizeCat(s.category)}</span>
                                   <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '20px', background: isSel ? 'rgba(255,255,255,0.25)' : '#F0F9FF', color: isSel ? '#fff' : '#0369A1', border: isSel ? '1px solid rgba(255,255,255,0.4)' : '1px solid #BAE6FD' }}>{s.gender === 'Female' ? '♀' : '♂'} {s.gender}</span>
@@ -751,9 +934,9 @@ function AdminDashboard() {
                     <label>Select Branch <span className="required">*</span></label>
                     <select value={selectedBranch} onChange={(e) => setSelectedBranch(e.target.value)}>
                       <option value="">-- Select a branch --</option>
-                      {branches.filter(b => b.totalVacant > 0).map(b => (
+                      {branches.map(b => (
                         <option key={b._id} value={b._id}>
-                          {b.choiceCode} — {b.name} ({b.type}) — Vacant: {b.totalVacant}
+                          {b.choiceCode} — {b.branchGroup || b.name} [{b.specialization || b.name}] ({b.type}) — Vacant: {b.totalVacant}
                         </option>
                       ))}
                     </select>
@@ -862,40 +1045,96 @@ function AdminDashboard() {
                   {/* Student Selector with Search */}
                   <div className="form-group full-width">
                     <label>Select Student <span className="required">*</span></label>
-                    <input
-                      type="text"
-                      placeholder="🔍 Search by name, application ID, or phone…"
-                      value={upgradeStudentSearch}
-                      onChange={e => { setUpgradeStudentSearch(e.target.value); setUpgradeStudent(''); }}
-                      style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', fontSize: '13px', fontFamily: 'inherit', marginBottom: '8px' }}
-                    />
-                    <div style={{ border: '1px solid #8B1A1A', borderRadius: '8px', maxHeight: '220px', overflowY: 'auto', background: '#fff', boxShadow: '0 2px 8px rgba(139,26,26,0.08)' }}>
+
+                    {/* Radio Options: Search by Name / Application ID / Merit No. */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '8px', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                      <span style={{ color: 'var(--text-muted)', fontWeight: 700 }}>Search by:</span>
+                      <label style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                        <input
+                          type="radio"
+                          name="upgradeSearchBy"
+                          value="name"
+                          checked={upgradeSearchBy === 'name'}
+                          onChange={() => setUpgradeSearchBy('name')}
+                        />
+                        Name
+                      </label>
+                      <label style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                        <input
+                          type="radio"
+                          name="upgradeSearchBy"
+                          value="appId"
+                          checked={upgradeSearchBy === 'appId'}
+                          onChange={() => setUpgradeSearchBy('appId')}
+                        />
+                        Application ID
+                      </label>
+                      <label style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                        <input
+                          type="radio"
+                          name="upgradeSearchBy"
+                          value="merit"
+                          checked={upgradeSearchBy === 'merit'}
+                          onChange={() => setUpgradeSearchBy('merit')}
+                        />
+                        Merit No.
+                      </label>
+                    </div>
+
+                    {/* Search Input + Candidate Quota Filter + Category Filter */}
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
+                      <select
+                        value={upgradeQuotaFilter}
+                        onChange={e => { setUpgradeQuotaFilter(e.target.value); setUpgradeStudent(''); }}
+                        style={{ flex: 1, minWidth: '140px', padding: '8px 12px', border: '1.5px solid #8B1A1A', borderRadius: 'var(--radius-sm)', fontSize: '13px', fontWeight: 700, fontFamily: 'inherit', background: '#FFF8F8', color: '#8B1A1A' }}
+                      >
+                        <option value="all">All Quotas</option>
+                        <option value="Non-Sponsored">Non-Sponsored Quota</option>
+                        <option value="Sponsored">Sponsored Quota</option>
+                      </select>
+
+                      <input
+                        type="text"
+                        placeholder={
+                          upgradeSearchBy === 'name' ? '🔍 Search by name…' :
+                          upgradeSearchBy === 'appId' ? '🔍 Search by Application ID…' :
+                          `🔍 Search by ${upgradeQuotaFilter === 'Sponsored' ? 'Sponsored' : upgradeQuotaFilter === 'Non-Sponsored' ? 'Non-Sponsored' : 'Merit'} Rank #…`
+                        }
+                        value={upgradeStudentSearch}
+                        onChange={e => { setUpgradeStudentSearch(e.target.value); setUpgradeStudent(''); }}
+                        style={{ flex: 2, minWidth: '160px', padding: '8px 12px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', fontSize: '13px', fontFamily: 'inherit' }}
+                      />
+
+                      <select
+                        value={upgradeCatFilter}
+                        onChange={e => { setUpgradeCatFilter(e.target.value); setUpgradeStudent(''); }}
+                        style={{ flex: 1, minWidth: '130px', padding: '8px 12px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', fontSize: '13px', fontFamily: 'inherit' }}
+                      >
+                        <option value="all">All Categories</option>
+                        {Object.entries(CAT_LABELS).filter(([k]) => k !== 'EWS').map(([k, v]) => (
+                          <option key={k} value={k}>{v}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Student List */}
+                    <div style={{ border: '1px solid #8B1A1A', borderRadius: '8px', maxHeight: '240px', overflowY: 'auto', background: '#fff', boxShadow: '0 2px 8px rgba(139,26,26,0.08)' }}>
                       {(() => {
-                        const filtered = students.filter(s => {
-                          if (!upgradeStudentSearch) return false;
-                          const term = upgradeStudentSearch.toLowerCase();
-                          return (s.fullName || '').toLowerCase().includes(term) ||
-                            (s.applicationId || '').toLowerCase().includes(term) ||
-                            (s.phone || '').toLowerCase().includes(term);
-                        }).slice(0, 50);
-                        if (!upgradeStudentSearch) return (
+                        const list = filteredUpgradeStudents.slice(0, 50);
+                        if (list.length === 0) return (
                           <div style={{ padding: '18px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
-                            Type a name or application ID to search…
+                            No students match the search filter
                           </div>
                         );
-                        if (filtered.length === 0) return (
-                          <div style={{ padding: '18px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
-                            No students found
-                          </div>
-                        );
-                        return filtered.map((s, idx) => {
+                        return list.map((s, idx) => {
                           const isSel = upgradeStudent === s._id;
+                          const isSpon = s.candidateType === 'Sponsored' || s.isSponsored;
                           return (
                             <div
                               key={s._id}
                               onClick={() => setUpgradeStudent(isSel ? '' : s._id)}
                               style={{
-                                display: 'flex', alignItems: 'center', gap: '10px',
+                                display: 'flex', alignItems: 'center', gap: '12px',
                                 padding: '10px 14px', cursor: 'pointer',
                                 borderBottom: '1px solid rgba(139,26,26,0.08)',
                                 background: isSel ? 'linear-gradient(135deg,#8B1A1A,#B22222)' : idx % 2 === 0 ? '#fff' : '#FFF8F8',
@@ -903,11 +1142,22 @@ function AdminDashboard() {
                                 transition: 'all 0.15s ease'
                               }}
                             >
+                              {/* Independent Quota Merit Rank Circle */}
+                              <span
+                                title={`${isSpon ? 'Sponsored' : 'Non-Sponsored'} Merit Rank #${getCandidateRank(s)}`}
+                                style={{
+                                  minWidth: '28px', height: '28px', borderRadius: '50%',
+                                  background: isSel ? 'rgba(255,255,255,0.25)' : isSpon ? '#2563EB' : '#8B1A1A',
+                                  color: '#fff', fontSize: '11px', fontWeight: 800,
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                                }}>{getCandidateRank(s)}</span>
+
                               <div style={{ flex: 1, minWidth: 0 }}>
                                 <div style={{ fontWeight: 700, fontSize: '13px' }}>{s.fullName}</div>
                                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center', marginTop: '3px' }}>
                                   <span style={{ fontSize: '11px', opacity: isSel ? 0.8 : 0.5 }}>{s.applicationId}</span>
                                   <span style={{ opacity: 0.3 }}>·</span>
+                                  <span style={{ fontSize: '11px', fontWeight: 700, padding: '1px 7px', borderRadius: '20px', background: isSel ? 'rgba(255,255,255,0.25)' : isSpon ? '#EFF6FF' : '#F0FDF4', color: isSel ? '#fff' : isSpon ? '#1D4ED8' : '#15803D', border: isSel ? '1px solid rgba(255,255,255,0.4)' : isSpon ? '1px solid #BFDBFE' : '1px solid #BBF7D0' }}>{isSpon ? '💼 Sponsored' : '🎓 Non-Sponsored'}</span>
                                   <span style={{ fontSize: '11px', fontWeight: 800, padding: '1px 7px', borderRadius: '20px', background: isSel ? 'rgba(255,255,255,0.25)' : '#FFF0F0', color: isSel ? '#fff' : '#8B1A1A' }}>📊 {s.mhtCetPercentile}%ile</span>
                                   <span style={{ fontSize: '11px', fontWeight: 700, padding: '1px 7px', borderRadius: '20px', background: isSel ? 'rgba(255,255,255,0.25)' : '#FFFBEB', color: isSel ? '#fff' : '#B45309' }}>{normalizeCat(s.category)}</span>
                                   <span style={{ fontSize: '11px', fontWeight: 600, padding: '1px 7px', borderRadius: '20px', background: isSel ? 'rgba(255,255,255,0.25)' : '#F0F9FF', color: isSel ? '#fff' : '#0369A1' }}>{s.gender === 'Female' ? '♀' : '♂'} {s.gender}</span>
@@ -936,7 +1186,9 @@ function AdminDashboard() {
                     <select value={upgradeFromBranch} onChange={e => setUpgradeFromBranch(e.target.value)} style={{ marginBottom: '10px' }}>
                       <option value="">-- Select current branch --</option>
                       {branches.map(b => (
-                        <option key={b._id} value={b._id}>{b.choiceCode} — {b.name} ({b.type})</option>
+                        <option key={b._id} value={b._id}>
+                          {b.choiceCode} — {b.branchGroup || b.name} [{b.specialization || b.name}] ({b.type}) — Vacant: {b.totalVacant || 0}
+                        </option>
                       ))}
                     </select>
                     <div style={{ display: 'flex', gap: '10px' }}>
@@ -966,7 +1218,7 @@ function AdminDashboard() {
                       <option value="">-- Select target branch --</option>
                       {branches.filter(b => b._id !== upgradeFromBranch).map(b => (
                         <option key={b._id} value={b._id}>
-                          {b.choiceCode} — {b.name} ({b.type}) — Vacant: {b.totalVacant || 0}
+                          {b.choiceCode} — {b.branchGroup || b.name} [{b.specialization || b.name}] ({b.type}) — Vacant: {b.totalVacant || 0}
                         </option>
                       ))}
                     </select>

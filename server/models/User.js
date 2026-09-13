@@ -56,7 +56,14 @@ const userSchema = new mongoose.Schema({
   isSponsored: { type: Boolean, default: false },
   candidateType: {
     type: String,
-    enum: ['Non-Sponsored', 'Sponsored'],
+    enum: [
+      'Non-Sponsored',
+      'Sponsored',
+      'Experienced Without Sponsorship',
+      'Experienced With Sponsorship',
+      'Fresh Candidate',
+      'Regular'
+    ],
     default: 'Non-Sponsored'
   },
   studentType: {
