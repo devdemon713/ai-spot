@@ -133,8 +133,9 @@ function sumQuotaMatrix(m) {
 
 // Virtual: compute effective non-sponsored vacant seats
 branchSchema.virtual('effectiveNonSponsoredVacant').get(function() {
-  const sumMatrix = sumQuotaMatrix(this.nonSponsoredDetails);
-  if (sumMatrix > 0) return sumMatrix;
+  if (this.nonSponsoredDetails && (this.nonSponsoredDetails.OPEN || sumQuotaMatrix(this.nonSponsoredDetails) >= 0)) {
+    return sumQuotaMatrix(this.nonSponsoredDetails);
+  }
   if (this.nonSponsoredVacant > 0) return this.nonSponsoredVacant;
   
   let total = 0;
@@ -152,8 +153,9 @@ branchSchema.virtual('effectiveNonSponsoredVacant').get(function() {
 
 // Virtual: compute effective sponsored vacant seats
 branchSchema.virtual('effectiveSponsoredVacant').get(function() {
-  const sumMatrix = sumQuotaMatrix(this.sponsoredDetails);
-  if (sumMatrix > 0) return sumMatrix;
+  if (this.sponsoredDetails && (this.sponsoredDetails.OPEN || sumQuotaMatrix(this.sponsoredDetails) >= 0)) {
+    return sumQuotaMatrix(this.sponsoredDetails);
+  }
   return this.sponsoredVacant || 0;
 });
 

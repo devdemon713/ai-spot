@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import SeatMatrix from '../components/SeatMatrix';
+import BranchSummaryChart from '../components/BranchSummaryChart';
 import LiveNotification from '../components/animations/LiveNotification';
 import TeaBreakOverlay from '../components/animations/TeaBreakOverlay';
 import LunchBreakOverlay from '../components/animations/LunchBreakOverlay';
@@ -27,11 +28,20 @@ function StudentDashboard() {
     if (!socket) return;
 
     socket.on('seat-update', (data) => {
-      setBranches(prev => prev.map(b =>
-        b._id === data.branchId ? data.branch : b
-      ));
-      setFlashId(data.branchId);
-      setTimeout(() => setFlashId(null), 1000);
+      if (!data) return;
+      if (data.branches) {
+        setBranches(data.branches);
+      } else if (data.deleted) {
+        setBranches(prev => prev.filter(b => b._id !== data.branchId && b._id?.toString() !== data.branchId?.toString()));
+      } else if (data.branch) {
+        setBranches(prev => prev.map(b =>
+          (b._id === data.branchId || b._id?.toString() === data.branchId?.toString()) ? data.branch : b
+        ));
+      }
+      if (data.branchId) {
+        setFlashId(data.branchId);
+        setTimeout(() => setFlashId(null), 1200);
+      }
     });
 
     socket.on('allocation-update', (data) => {
@@ -219,9 +229,7 @@ function StudentDashboard() {
         </div>
       </div>
 
-      {filteredBranches.map(branch => (
-        <SeatMatrix key={branch._id} branch={branch} flashId={flashId} />
-      ))}
+      <BranchSummaryChart branches={filteredBranches} flashId={flashId} vacantOnly />
     </main>
   );
 }

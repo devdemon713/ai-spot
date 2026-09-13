@@ -47,6 +47,17 @@ async function decrementSeat(branchId, seatPool, seatCategory, seatType) {
       if (typeof matrix[cat] === 'number' && matrix[cat] > 0) {
         matrix[cat] -= 1;
         done = true;
+      } else if (matrix.OPEN && matrix.OPEN.general > 0) {
+        matrix.OPEN.general -= 1;
+        done = true;
+      }
+    } else if (cat === 'ORPHAN') {
+      if (matrix.ORPHAN && typeof matrix.ORPHAN.general === 'number' && matrix.ORPHAN.general > 0) {
+        matrix.ORPHAN.general -= 1;
+        done = true;
+      } else if (matrix.OPEN && matrix.OPEN.general > 0) {
+        matrix.OPEN.general -= 1;
+        done = true;
       }
     } else if (cat === 'OPEN' && (st === 'pw' || st === 'def')) {
       if (matrix.OPEN && typeof matrix.OPEN[st] === 'number' && matrix.OPEN[st] > 0) {
@@ -88,6 +99,8 @@ async function decrementSeat(branchId, seatPool, seatCategory, seatType) {
     }
   }
 
+  branch.nonSponsoredVacant = branch.effectiveNonSponsoredVacant;
+  branch.sponsoredVacant = branch.effectiveSponsoredVacant;
   branch.markModified('nonSponsoredDetails');
   branch.markModified('sponsoredDetails');
   branch.markModified('stateLevel');
@@ -110,19 +123,17 @@ async function incrementSeat(branchId, seatPool, seatCategory, seatType) {
     if (cat === 'PwCR' || cat === 'DEFCR') {
       matrix[cat] = (matrix[cat] || 0) + 1;
     } else if (cat === 'OPEN' && (st === 'pw' || st === 'def')) {
-      if (!matrix.OPEN) matrix.OPEN = {};
+      if (!matrix.OPEN) matrix.OPEN = { general: 0, ladies: 0, pw: 0, def: 0 };
       matrix.OPEN[st] = (matrix.OPEN[st] || 0) + 1;
-    } else if (matrix[cat]) {
-      if (typeof matrix[cat][st] === 'number') {
-        matrix[cat][st] += 1;
+    } else if (cat === 'ORPHAN') {
+      if (!matrix.ORPHAN) matrix.ORPHAN = { general: 0 };
+      matrix.ORPHAN.general = (matrix.ORPHAN.general || 0) + 1;
+    } else {
+      if (!matrix[cat]) matrix[cat] = { general: 0, ladies: 0 };
+      if (st === 'ladies') {
+        matrix[cat].ladies = (matrix[cat].ladies || 0) + 1;
       } else {
         matrix[cat].general = (matrix[cat].general || 0) + 1;
-      }
-    } else {
-      if (isSponsoredPool) {
-        branch.sponsoredVacant = (branch.sponsoredVacant || 0) + 1;
-      } else {
-        branch.nonSponsoredVacant = (branch.nonSponsoredVacant || 0) + 1;
       }
     }
   } else {
@@ -133,6 +144,8 @@ async function incrementSeat(branchId, seatPool, seatCategory, seatType) {
     }
   }
 
+  branch.nonSponsoredVacant = branch.effectiveNonSponsoredVacant;
+  branch.sponsoredVacant = branch.effectiveSponsoredVacant;
   branch.markModified('nonSponsoredDetails');
   branch.markModified('sponsoredDetails');
   branch.markModified('stateLevel');

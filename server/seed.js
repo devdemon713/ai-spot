@@ -11,7 +11,7 @@ const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/wce-spot-r
 const branches = [
   {
     choiceCode: '0600719110',
-    branchGroup: '1. CIVIL Aided',
+    branchGroup: 'CIVIL Aided',
     name: 'Construction Management',
     specialization: 'Un-Aided Construction Management',
     type: 'Aided',
@@ -21,7 +21,7 @@ const branches = [
       ORPHAN: { general: 0 },
       SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 }, VJ_DT: { general: 0, ladies: 0 },
       NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 }, NTD: { general: 0, ladies: 0 },
-      OBC: { general: 1, ladies: 0 }, PwCR: 1, DEFCR: 1, SEBC: { general: 0, ladies: 0 }
+      OBC: { general: 1, ladies: 0 }, PwCR: 0, DEFCR: 0, SEBC: { general: 0, ladies: 0 }
     },
     sponsoredDetails: {
       OPEN: { general: 2, ladies: 0, pw: 0, def: 0 },
@@ -33,7 +33,7 @@ const branches = [
   },
   {
     choiceCode: '0600719120U',
-    branchGroup: '2. CIVIL Un-Aided',
+    branchGroup: 'R & A Un-Aided',
     name: 'CIVIL-Environment',
     specialization: 'Un-Aided CIVIL-Environment',
     type: 'Unaided',
@@ -43,7 +43,7 @@ const branches = [
       ORPHAN: { general: 0 },
       SC: { general: 1, ladies: 0 }, ST: { general: 1, ladies: 0 }, VJ_DT: { general: 0, ladies: 0 },
       NTB: { general: 0, ladies: 0 }, NTC: { general: 1, ladies: 0 }, NTD: { general: 0, ladies: 0 },
-      OBC: { general: 3, ladies: 0 }, PwCR: 1, DEFCR: 1, SEBC: { general: 2, ladies: 0 }
+      OBC: { general: 3, ladies: 0 }, PwCR: 0, DEFCR: 0, SEBC: { general: 2, ladies: 0 }
     },
     sponsoredDetails: {
       OPEN: { general: 3, ladies: 0, pw: 0, def: 0 },
@@ -55,9 +55,9 @@ const branches = [
   },
   {
     choiceCode: '0600724210',
-    branchGroup: '3. CSE Aided',
+    branchGroup: 'CSE, Aided',
     name: 'CSE Design',
-    specialization: 'Un-Aided CSE Design',
+    specialization: 'Un-Aided CSE Desigen',
     type: 'Aided',
     sanctionedIntake: 60,
     nonSponsoredDetails: {
@@ -65,7 +65,7 @@ const branches = [
       ORPHAN: { general: 0 },
       SC: { general: 1, ladies: 0 }, ST: { general: 1, ladies: 0 }, VJ_DT: { general: 0, ladies: 0 },
       NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 }, NTD: { general: 0, ladies: 0 },
-      OBC: { general: 3, ladies: 0 }, PwCR: 1, DEFCR: 1, SEBC: { general: 0, ladies: 0 }
+      OBC: { general: 3, ladies: 0 }, PwCR: 0, DEFCR: 0, SEBC: { general: 1, ladies: 0 }
     },
     sponsoredDetails: {
       OPEN: { general: 4, ladies: 0, pw: 0, def: 0 },
@@ -77,15 +77,15 @@ const branches = [
   },
   {
     choiceCode: '0600724270U',
-    branchGroup: '4. CSE Un-Aided',
+    branchGroup: 'CSE Un-Aided',
     name: 'ETC',
     specialization: 'Un-Aided ETC',
     type: 'Unaided',
     sanctionedIntake: 60,
     nonSponsoredDetails: {
       OPEN: { general: 0, ladies: 0, pw: 0, def: 0 },
-      ORPHAN: { general: 1 },
-      SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 }, VJ_DT: { general: 0, ladies: 0 },
+      ORPHAN: { general: 0 },
+      SC: { general: 0, ladies: 0 }, ST: { general: 1, ladies: 0 }, VJ_DT: { general: 0, ladies: 0 },
       NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 }, NTD: { general: 0, ladies: 0 },
       OBC: { general: 0, ladies: 0 }, PwCR: 0, DEFCR: 0, SEBC: { general: 0, ladies: 0 }
     },
@@ -99,7 +99,7 @@ const branches = [
   },
   {
     choiceCode: '0600724610',
-    branchGroup: '5. I.T. Aided',
+    branchGroup: 'I.T. Aided',
     name: 'Elect-Cont- & INST',
     specialization: 'Un-Aided Elect-Cont- & INST',
     type: 'Aided',
@@ -121,7 +121,7 @@ const branches = [
   },
   {
     choiceCode: '0600761210',
-    branchGroup: '6. Mechanical Aided',
+    branchGroup: 'I.T. Un-Aided',
     name: 'Manufacturing Engineering',
     specialization: 'Un-Aided Manuf. Engi',
     type: 'Aided',
@@ -129,9 +129,14 @@ const branches = [
     nonSponsoredDetails: {
       OPEN: { general: 2, ladies: 0, pw: 0, def: 0 },
       ORPHAN: { general: 0 },
-      SC: { general: 0, ladies: 0 }, ST: { general: 1, ladies: 0 }, VJ_DT: { general: 1, ladies: 0 },
-      NTB: { general: 1, ladies: 0 }, NTC: { general: 0, ladies: 0 }, NTD: { general: 0, ladies: 0 },
-      OBC: { general: 1, ladies: 0 }, PwCR: 1, DEFCR: 1, SEBC: { general: 1, ladies: 0 }
+      SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 },
+      VJ_DT: { general: 1, ladies: 0 },
+      NTB: { general: 1, ladies: 0 },
+      NTC: { general: 1, ladies: 0 },
+      NTD: { general: 0, ladies: 0 },
+      OBC: { general: 1, ladies: 0 },
+      PwCR: 0, DEFCR: 0,
+      SEBC: { general: 1, ladies: 0 }
     },
     sponsoredDetails: {
       OPEN: { general: 2, ladies: 0, pw: 0, def: 0 },
@@ -143,7 +148,7 @@ const branches = [
   },
   {
     choiceCode: '0600761220',
-    branchGroup: '7. Mechanical Aided',
+    branchGroup: 'Electrical Aided',
     name: 'Thermal Engineering',
     specialization: 'Un-Aided Thermal Engni',
     type: 'Aided',
@@ -153,7 +158,7 @@ const branches = [
       ORPHAN: { general: 0 },
       SC: { general: 1, ladies: 0 }, ST: { general: 1, ladies: 0 }, VJ_DT: { general: 0, ladies: 0 },
       NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 }, NTD: { general: 0, ladies: 0 },
-      OBC: { general: 2, ladies: 0 }, PwCR: 1, DEFCR: 1, SEBC: { general: 1, ladies: 0 }
+      OBC: { general: 2, ladies: 0 }, PwCR: 0, DEFCR: 0, SEBC: { general: 1, ladies: 0 }
     },
     sponsoredDetails: {
       OPEN: { general: 3, ladies: 0, pw: 0, def: 0 },
@@ -165,7 +170,7 @@ const branches = [
   },
   {
     choiceCode: '0600737610',
-    branchGroup: '8. Electronics Aided',
+    branchGroup: 'Electronics Aided',
     name: 'Data Science',
     specialization: 'Un-Aided Data Science',
     type: 'Aided',
@@ -175,7 +180,7 @@ const branches = [
       ORPHAN: { general: 0 },
       SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 }, VJ_DT: { general: 0, ladies: 0 },
       NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 }, NTD: { general: 0, ladies: 0 },
-      OBC: { general: 1, ladies: 0 }, PwCR: 1, DEFCR: 1, SEBC: { general: 0, ladies: 0 }
+      OBC: { general: 1, ladies: 0 }, PwCR: 0, DEFCR: 0, SEBC: { general: 0, ladies: 0 }
     },
     sponsoredDetails: {
       OPEN: { general: 1, ladies: 0, pw: 0, def: 0 },
@@ -187,16 +192,16 @@ const branches = [
   },
   {
     choiceCode: '0600761230',
-    branchGroup: '9. Mechanical Aided',
+    branchGroup: 'Mech Aided',
     name: 'Structural Engineering',
-    specialization: 'Un-Aided Civil-Structure',
+    specialization: 'Un-Aided Civi-Structure',
     type: 'Aided',
     sanctionedIntake: 60,
     nonSponsoredDetails: {
       OPEN: { general: 0, ladies: 0, pw: 0, def: 0 },
       ORPHAN: { general: 0 },
       SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 }, VJ_DT: { general: 0, ladies: 0 },
-      NTB: { general: 1, ladies: 0 }, NTC: { general: 0, ladies: 0 }, NTD: { general: 0, ladies: 0 },
+      NTB: { general: 0, ladies: 0 }, NTC: { general: 1, ladies: 0 }, NTD: { general: 0, ladies: 0 },
       OBC: { general: 0, ladies: 0 }, PwCR: 0, DEFCR: 0, SEBC: { general: 0, ladies: 0 }
     },
     sponsoredDetails: {
@@ -209,7 +214,7 @@ const branches = [
   },
   {
     choiceCode: '0600792170U',
-    branchGroup: '10. AIML Un-Aided',
+    branchGroup: 'AIML Un-Aided',
     name: 'Computer Science and Engineering',
     specialization: 'Un-Aided CSE',
     type: 'Unaided',
@@ -231,7 +236,7 @@ const branches = [
   },
   {
     choiceCode: '0600792180U',
-    branchGroup: '11. AIML Un-Aided',
+    branchGroup: 'AIML Un-Aided',
     name: 'Electrical Power System',
     specialization: 'Un-Aided Elect-Power system',
     type: 'Unaided',

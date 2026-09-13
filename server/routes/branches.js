@@ -33,32 +33,154 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+const Allocation = require('../models/Allocation');
+
+// @route   POST /api/branches
+// @desc    Create a new branch with seat matrix (ADMIN)
+router.post('/', auth, adminOnly, async (req, res) => {
+  try {
+    const {
+      choiceCode,
+      branchGroup,
+      name,
+      specialization,
+      type,
+      sanctionedIntake,
+      nonSponsoredDetails,
+      sponsoredDetails,
+      msSeats,
+      minoritySeats,
+      allIndiaSeats,
+      instituteSeats,
+      orphanSeats
+    } = req.body;
+
+    if (!choiceCode || !name || !type || sanctionedIntake === undefined) {
+      return res.status(400).json({ message: 'Choice Code, Course Name, Type, and Sanctioned Intake are required' });
+    }
+
+    const existing = await Branch.findOne({ choiceCode: choiceCode.trim() });
+    if (existing) {
+      return res.status(400).json({ message: `Branch with Choice Code "${choiceCode}" already exists (${existing.name})` });
+    }
+
+    const newBranch = new Branch({
+      choiceCode: choiceCode.trim(),
+      branchGroup: branchGroup?.trim() || name.trim(),
+      name: name.trim(),
+      specialization: specialization?.trim() || name.trim(),
+      type,
+      sanctionedIntake: Number(sanctionedIntake) || 60,
+      nonSponsoredDetails: nonSponsoredDetails || {},
+      sponsoredDetails: sponsoredDetails || {},
+      msSeats: Number(msSeats) || 0,
+      minoritySeats: Number(minoritySeats) || 0,
+      allIndiaSeats: Number(allIndiaSeats) || 0,
+      instituteSeats: Number(instituteSeats) || 0,
+      orphanSeats: Number(orphanSeats) || 0,
+      isActive: true
+    });
+
+    await newBranch.save();
+
+    // Broadcast update to all connected clients
+    const io = req.app.get('io');
+    if (io) {
+      const allBranches = await Branch.find({ isActive: true }).sort({ choiceCode: 1 });
+      io.emit('seat-update', {
+        branchId: newBranch._id,
+        branch: newBranch.toJSON(),
+        branches: allBranches.map(b => b.toJSON()),
+        updatedAt: new Date()
+      });
+    }
+
+    res.status(201).json(newBranch);
+  } catch (error) {
+    console.error('Create branch error:', error);
+    res.status(500).json({ message: error.message || 'Server error creating branch' });
+  }
+});
+
 // @route   PUT /api/branches/:id
 // @desc    Update branch seat data (ADMIN) - broadcasts via Socket.IO
 router.put('/:id', auth, adminOnly, async (req, res) => {
   try {
-    const branch = await Branch.findByIdAndUpdate(
-      req.params.id,
-      { $set: req.body },
-      { new: true, runValidators: true }
-    );
-
+    const branch = await Branch.findById(req.params.id);
     if (!branch) {
       return res.status(404).json({ message: 'Branch not found' });
     }
 
+    Object.assign(branch, req.body);
+    if (req.body.nonSponsoredDetails) {
+      branch.nonSponsoredDetails = req.body.nonSponsoredDetails;
+      branch.markModified('nonSponsoredDetails');
+    }
+    if (req.body.sponsoredDetails) {
+      branch.sponsoredDetails = req.body.sponsoredDetails;
+      branch.markModified('sponsoredDetails');
+    }
+    if (req.body.stateLevel) {
+      branch.markModified('stateLevel');
+    }
+
+    await branch.save();
+
     // Broadcast seat update to all connected clients
     const io = req.app.get('io');
-    io.emit('seat-update', {
-      branchId: branch._id,
-      branch: branch.toJSON(),
-      updatedAt: new Date()
-    });
+    if (io) {
+      io.emit('seat-update', {
+        branchId: branch._id,
+        branch: branch.toJSON(),
+        updatedAt: new Date()
+      });
+    }
 
     res.json(branch);
   } catch (error) {
     console.error('Update branch error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: error.message || 'Server error' });
+  }
+});
+
+// @route   DELETE /api/branches/:id
+// @desc    Delete a branch (ADMIN)
+router.delete('/:id', auth, adminOnly, async (req, res) => {
+  try {
+    const branch = await Branch.findById(req.params.id);
+    if (!branch) {
+      return res.status(404).json({ message: 'Branch not found' });
+    }
+
+    // Check if there are active allocations for this branch
+    const activeAllocations = await Allocation.countDocuments({
+      branch: branch._id,
+      status: { $ne: 'cancelled' }
+    });
+
+    if (activeAllocations > 0) {
+      return res.status(400).json({
+        message: `Cannot delete branch: There are ${activeAllocations} active allocation(s) for this branch. Please cancel them first.`
+      });
+    }
+
+    await Branch.findByIdAndDelete(req.params.id);
+
+    const io = req.app.get('io');
+    if (io) {
+      const allBranches = await Branch.find({ isActive: true }).sort({ choiceCode: 1 });
+      io.emit('seat-update', {
+        branchId: req.params.id,
+        deleted: true,
+        branches: allBranches.map(b => b.toJSON()),
+        updatedAt: new Date()
+      });
+    }
+
+    res.json({ message: `Branch "${branch.name}" deleted successfully`, branchId: req.params.id });
+  } catch (error) {
+    console.error('Delete branch error:', error);
+    res.status(500).json({ message: error.message || 'Server error deleting branch' });
   }
 });
 

@@ -4,10 +4,12 @@ import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import SeatMatrix from '../components/SeatMatrix';
 import BranchSummaryChart from '../components/BranchSummaryChart';
+import AddBranchModal from '../components/AddBranchModal';
 
 const CAT_LABELS = {
   OPEN: 'OPEN', SC: 'SC', ST: 'ST', VJ_DT: 'VJ/DT',
-  NTB: 'NT-B', NTC: 'NT-C', NTD: 'NT-D', OBC: 'OBC', SEBC: 'SEBC', EWS: 'EWS'
+  NTB: 'NT-B', NTC: 'NT-C', NTD: 'NT-D', OBC: 'OBC', SEBC: 'SEBC',
+  ORPHAN: 'ORPHAN', PwCR: 'PwCR', DEFCR: 'DEFCR', EWS: 'EWS'
 };
 
 // Normalize messy category values from imported data to clean display labels
@@ -30,7 +32,12 @@ function normalizeCat(raw) {
   if (u.includes('NT-C') || u.includes('NT 2') || u === 'NTC') return 'NT-C';
   if (u.includes('NT-D') || u.includes('NT 3') || u === 'NTD') return 'NT-D';
   if (u.startsWith('NT')) return 'NT';
-  return raw; // fallback: show as-is
+  return raw;
+}
+
+function cleanBranchGroup(text) {
+  if (!text) return '';
+  return text.replace(/^\s*\d+[\.\-\)]\s*/, '').trim();
 }
 
 function AdminDashboard() {
@@ -40,6 +47,7 @@ function AdminDashboard() {
 
   // Shared state
   const [branches, setBranches] = useState([]);
+  const [isAddBranchOpen, setIsAddBranchOpen] = useState(false);
   const [students, setStudents] = useState([]);
   const [stats, setStats] = useState(null);
   const [round, setRound] = useState(null);
@@ -90,6 +98,7 @@ function AdminDashboard() {
   const [filterQuota, setFilterQuota] = useState(''); // '' | 'Non-Sponsored' | 'Sponsored'
   const [filterCategory, setFilterCategory] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  const [flashId, setFlashId] = useState(null);
 
   useEffect(() => {
     fetchAll();
@@ -98,7 +107,20 @@ function AdminDashboard() {
   useEffect(() => {
     if (!socket) return;
     socket.on('seat-update', (data) => {
-      setBranches(prev => prev.map(b => b._id === data.branchId ? data.branch : b));
+      if (!data) return;
+      if (data.branches) {
+        setBranches(data.branches);
+      } else if (data.deleted) {
+        setBranches(prev => prev.filter(b => b._id !== data.branchId && b._id?.toString() !== data.branchId?.toString()));
+      } else if (data.branch) {
+        setBranches(prev => prev.map(b =>
+          (b._id === data.branchId || b._id?.toString() === data.branchId?.toString()) ? data.branch : b
+        ));
+      }
+      if (data.branchId) {
+        setFlashId(data.branchId);
+        setTimeout(() => setFlashId(null), 1200);
+      }
     });
     socket.on('seats-reset', (data) => {
       setBranches(data.branches);
@@ -177,12 +199,35 @@ function AdminDashboard() {
   // Branch update handler
   const handleBranchUpdate = useCallback(async (branchId, updatedData) => {
     try {
-      await axios.put(`/api/branches/${branchId}`, updatedData);
+      const res = await axios.put(`/api/branches/${branchId}`, updatedData);
+      setBranches(prev => prev.map(b => b._id === branchId ? res.data : b));
       showMsg('Seats updated successfully!');
     } catch (err) {
       showMsg('Error updating seats: ' + (err.response?.data?.message || err.message));
+      throw err;
     }
   }, []);
+
+  // Handle new branch created
+  const handleBranchCreated = (newBranch) => {
+    setBranches(prev => {
+      const exists = prev.some(b => b._id === newBranch._id);
+      if (exists) return prev.map(b => b._id === newBranch._id ? newBranch : b);
+      return [...prev, newBranch];
+    });
+    showMsg(`Branch "${newBranch.name}" created successfully!`);
+  };
+
+  // Handle branch deleted
+  const handleDeleteBranch = async (branchId) => {
+    try {
+      await axios.delete(`/api/branches/${branchId}`);
+      setBranches(prev => prev.filter(b => b._id !== branchId));
+      showMsg('Branch deleted successfully');
+    } catch (err) {
+      showMsg('Failed to delete branch: ' + (err.response?.data?.message || err.message));
+    }
+  };
 
   // Manual allocation
   const handleManualAllocate = async () => {
@@ -542,7 +587,15 @@ function AdminDashboard() {
             </div>
           </div>
 
-          <BranchSummaryChart branches={branches} vacantOnly />
+          <BranchSummaryChart
+            branches={branches}
+            flashId={flashId}
+            vacantOnly={false}
+            showAdminControls={true}
+            onOpenAddBranch={() => setIsAddBranchOpen(true)}
+            onUpdateBranch={handleBranchUpdate}
+            onDeleteBranch={handleDeleteBranch}
+          />
 
           {/* Round Status */}
           <div className="card" style={{ marginBottom: '20px' }}>
@@ -614,28 +667,45 @@ function AdminDashboard() {
       {/* ===== SEATS TAB ===== */}
       {tab === 'seats' && (
         <>
-          <div className="alert alert-info">
-            Edit seat counts directly in the matrix below. Changes are saved and broadcast to all connected students in real-time.
-          </div>
-          {branches.map(branch => (
-            <div key={branch._id} style={{ marginBottom: '24px' }}>
-              <SeatMatrix
-                branch={branch}
-                editable={true}
-                onUpdate={(updated) => {
-                  setBranches(prev => prev.map(b => b._id === branch._id ? { ...b, ...updated } : b));
-                }}
-              />
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px', gap: '8px' }}>
-                <button
-                  className="btn btn-primary btn-sm"
-                  onClick={() => handleBranchUpdate(branch._id, branches.find(b => b._id === branch._id))}
-                >
-                  💾 Save Changes
-                </button>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            background: '#EFF6FF',
+            border: '1px solid #BFDBFE',
+            borderRadius: '8px',
+            padding: '12px 16px',
+            marginBottom: '20px',
+            flexWrap: 'wrap',
+            gap: '12px'
+          }}>
+            <div>
+              <strong style={{ color: '#1E40AF', fontSize: '14px' }}>
+                💺 Seat Matrix Management
+              </strong>
+              <div style={{ color: '#3B82F6', fontSize: '12px', marginTop: '2px' }}>
+                Edit seat counts directly in the matrix below. Changes are saved and broadcast to all connected students in real-time.
               </div>
             </div>
-          ))}
+            <button
+              className="btn btn-primary"
+              onClick={() => setIsAddBranchOpen(true)}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}
+            >
+              ➕ Add New Branch
+            </button>
+          </div>
+
+          <BranchSummaryChart
+            branches={branches}
+            flashId={flashId}
+            vacantOnly={false}
+            editable={true}
+            showAdminControls={true}
+            onOpenAddBranch={() => setIsAddBranchOpen(true)}
+            onUpdateBranch={handleBranchUpdate}
+            onDeleteBranch={handleDeleteBranch}
+          />
         </>
       )}
 
@@ -936,7 +1006,7 @@ function AdminDashboard() {
                       <option value="">-- Select a branch --</option>
                       {branches.map(b => (
                         <option key={b._id} value={b._id}>
-                          {b.choiceCode} — {b.branchGroup || b.name} [{b.specialization || b.name}] ({b.type}) — Vacant: {b.totalVacant}
+                          {b.choiceCode} — {cleanBranchGroup(b.branchGroup || b.name)} [{b.specialization || b.name}] ({b.type}) — Vacant: {b.totalVacant}
                         </option>
                       ))}
                     </select>
@@ -1187,7 +1257,7 @@ function AdminDashboard() {
                       <option value="">-- Select current branch --</option>
                       {branches.map(b => (
                         <option key={b._id} value={b._id}>
-                          {b.choiceCode} — {b.branchGroup || b.name} [{b.specialization || b.name}] ({b.type}) — Vacant: {b.totalVacant || 0}
+                          {b.choiceCode} — {cleanBranchGroup(b.branchGroup || b.name)} [{b.specialization || b.name}] ({b.type}) — Vacant: {b.totalVacant || 0}
                         </option>
                       ))}
                     </select>
@@ -1218,7 +1288,7 @@ function AdminDashboard() {
                       <option value="">-- Select target branch --</option>
                       {branches.filter(b => b._id !== upgradeFromBranch).map(b => (
                         <option key={b._id} value={b._id}>
-                          {b.choiceCode} — {b.branchGroup || b.name} [{b.specialization || b.name}] ({b.type}) — Vacant: {b.totalVacant || 0}
+                          {b.choiceCode} — {cleanBranchGroup(b.branchGroup || b.name)} [{b.specialization || b.name}] ({b.type}) — Vacant: {b.totalVacant || 0}
                         </option>
                       ))}
                     </select>
@@ -1708,6 +1778,13 @@ function AdminDashboard() {
           </div>
         </>
       )}
+
+      {/* Add Branch Modal */}
+      <AddBranchModal
+        isOpen={isAddBranchOpen}
+        onClose={() => setIsAddBranchOpen(false)}
+        onBranchCreated={handleBranchCreated}
+      />
     </main>
   );
 }
