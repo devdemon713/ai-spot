@@ -1,278 +1,312 @@
 import React from 'react';
 
-const CATEGORIES = ['OPEN', 'SC', 'ST', 'VJ_DT', 'NTB', 'NTC', 'NTD', 'OBC', 'SEBC'];
-const CAT_LABELS = {
-  OPEN: 'OPEN', SC: 'SC', ST: 'ST', VJ_DT: 'VJ/DT',
-  NTB: 'NTB', NTC: 'NTC', NTD: 'NTD', OBC: 'OBC', SEBC: 'SEBC'
-};
+const CATEGORIES = [
+  { key: 'OPEN', label: 'OPEN', bg: '#E0F2FE', color: '#0369A1', width: '4.2%' },
+  { key: 'ORPHAN', label: 'ORPHAN', bg: '#FEF3C7', color: '#92400E', width: '4.2%' },
+  { key: 'SC', label: 'SC', width: '3.8%' },
+  { key: 'ST', label: 'ST', width: '3.8%' },
+  { key: 'VJ_DT', label: 'VJ/DT', width: '3.8%' },
+  { key: 'NTB', label: 'NTB/NT1', width: '4.4%' },
+  { key: 'NTC', label: 'NTC/NT2', width: '4.4%' },
+  { key: 'NTD', label: 'NTD/NT3', width: '4.4%' },
+  { key: 'OBC', label: 'OBC', width: '3.8%' },
+  { key: 'PwCR', label: 'PwCR', bg: '#F3E8FF', color: '#6D28D9', width: '4.0%' },
+  { key: 'DEFCR', label: 'DEFCR', bg: '#F3E8FF', color: '#6D28D9', width: '4.0%' },
+  { key: 'SEBC', label: 'SEBC', width: '3.8%' }
+];
 
-function getG(branch, cat) { return branch.stateLevel?.[cat]?.general || 0; }
-function getL(branch, cat) { return branch.stateLevel?.[cat]?.ladies  || 0; }
-function getCatTotal(branch, cat) { return getG(branch, cat) + getL(branch, cat); }
-function getRowTotal(branch) { return CATEGORIES.reduce((s, c) => s + getCatTotal(branch, c), 0); }
-function getPwdTotal(branch) {
-  return CATEGORIES.reduce((s, c) =>
-    s + (branch.pwd?.[c]?.general || 0) + (branch.pwd?.[c]?.ladies || 0), 0
-  ) + (branch.pwdCommonReserved || 0);
-}
-function getDefTotal(branch) {
-  return CATEGORIES.reduce((s, c) =>
-    s + (branch.def?.[c]?.general || 0) + (branch.def?.[c]?.ladies || 0), 0
-  ) + (branch.defCommonReserved || 0);
+function getCatSum(details, key) {
+  if (!details) return 0;
+  if (key === 'OPEN') {
+    return (details.OPEN?.general || 0) + (details.OPEN?.ladies || 0) + (details.OPEN?.pw || 0) + (details.OPEN?.def || 0);
+  }
+  if (key === 'ORPHAN') {
+    return (details.ORPHAN?.general || 0);
+  }
+  if (key === 'PwCR') return details.PwCR || 0;
+  if (key === 'DEFCR') return details.DEFCR || 0;
+
+  const slot = details[key];
+  if (!slot) return 0;
+  return (slot.general || 0) + (slot.ladies || 0);
 }
 
-function BranchSummaryChart({ branches, flashId, vacantOnly = false }) {
+function sumDetails(details) {
+  if (!details) return 0;
+  return CATEGORIES.reduce((s, cat) => s + getCatSum(details, cat.key), 0);
+}
+
+function BranchSummaryChart({ branches, flashId }) {
   if (!branches || branches.length === 0) return null;
 
   const grandTotal = branches.reduce((s, b) => s + (b.totalVacant || 0), 0);
 
-  // Grand total per category G / L
-  const catGrandG = CATEGORIES.map(cat => branches.reduce((s, b) => s + getG(b, cat), 0));
-  const catGrandL = CATEGORIES.map(cat => branches.reduce((s, b) => s + getL(b, cat), 0));
-  const catGrandGL = CATEGORIES.map((_, i) => catGrandG[i] + catGrandL[i]);
-  const grandStateTotal = catGrandGL.reduce((s, v) => s + v, 0);
+  // Category totals across all branches
+  const colTotalsNonSponsored = CATEGORIES.map(c =>
+    branches.reduce((s, b) => s + getCatSum(b.nonSponsoredDetails, c.key), 0)
+  );
+  const colTotalsSponsored = CATEGORIES.map(c =>
+    branches.reduce((s, b) => s + getCatSum(b.sponsoredDetails, c.key), 0)
+  );
+  const colTotalsCombined = CATEGORIES.map((_, i) => colTotalsNonSponsored[i] + colTotalsSponsored[i]);
+
+  const grandNonSponsoredTotal = branches.reduce((s, b) => {
+    const matrixSum = sumDetails(b.nonSponsoredDetails);
+    return s + (matrixSum > 0 ? matrixSum : (b.effectiveNonSponsoredVacant || b.nonSponsoredVacant || 0));
+  }, 0);
+
+  const grandSponsoredTotal = branches.reduce((s, b) => {
+    const matrixSum = sumDetails(b.sponsoredDetails);
+    return s + (matrixSum > 0 ? matrixSum : (b.effectiveSponsoredVacant || b.sponsoredVacant || 0));
+  }, 0);
 
   return (
     <section aria-labelledby="branch-chart-title" style={{ marginBottom: '24px' }}>
-      {/* Header bar */}
+      {/* Top Header Bar */}
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         marginBottom: '10px', flexWrap: 'wrap', gap: '8px'
       }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '18px', flexWrap: 'wrap' }}>
-            <h2 id="branch-chart-title" style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
-              📊 Live Vacancy Summary — All Branches
-            </h2>
-            <div style={{
-              background: '#FFFF00', color: '#000', fontWeight: 800, fontSize: '13px',
-              padding: '5px 16px', borderRadius: '3px', border: '1.5px solid #ccc', whiteSpace: 'nowrap'
-            }}>
-              ACAP ROUND 2 FOR ALL INDIA SEAT: {grandTotal}
-            </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+          <h2 id="branch-chart-title" style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+            📊 Live Vacancy Summary — All Branches
+          </h2>
+          <div style={{
+            background: '#FFFF00', color: '#000', fontWeight: 800, fontSize: '12px',
+            padding: '4px 12px', borderRadius: '4px', border: '1.5px solid #CA8A04', whiteSpace: 'nowrap'
+          }}>
+            ACAP ROUND 2 FOR ALL INDIA SEAT: {grandTotal}
           </div>
         </div>
       </div>
 
-      {/* Scrollable table wrapper */}
+      {/* Table Outer Container */}
       <div style={{
-        overflowX: 'auto', WebkitOverflowScrolling: 'touch',
-        borderRadius: '8px', border: '1px solid #D0D0D0',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-        width: vacantOnly ? 'fit-content' : 'auto',
-        maxWidth: '100%'
+        borderRadius: '8px', border: '1px solid #CBD5E1',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+        background: '#fff', width: '100%', overflowX: 'auto'
       }}>
         <table style={{
-          width: vacantOnly ? 'max-content' : '100%',
-          borderCollapse: 'collapse', fontSize: '11px',
-          background: '#fff',
-          minWidth: vacantOnly ? 0 : `${340 + CATEGORIES.length * 54}px`
+          width: '100%',
+          tableLayout: 'fixed',
+          borderCollapse: 'collapse',
+          fontSize: '11px',
+          fontFamily: 'inherit',
+          background: '#fff'
         }}>
+          {/* Column widths */}
+          <colgroup>
+            <col style={{ width: '2.5%' }} />   {/* # */}
+            <col style={{ width: '11.5%' }} />  {/* Branch / Intake */}
+            <col style={{ width: '17.5%' }} />  {/* Course / Specialization */}
+            <col style={{ width: '8.5%' }} />   {/* Quota */}
+            {CATEGORIES.map(c => (
+              <col key={c.key} style={{ width: c.width }} />
+            ))}
+            <col style={{ width: '5.2%' }} />   {/* TOTAL */}
+            <col style={{ width: '6.2%' }} />   {/* GRAND TOTAL */}
+          </colgroup>
+
           <thead>
-            {/* College header */}
+            {/* Institution Banner Row */}
             <tr>
-              <td colSpan={4 + (vacantOnly ? 0 : CATEGORIES.length * 2) + 2} style={{
+              <td colSpan={18} style={{
                 background: '#fff', padding: '8px 12px',
-                borderBottom: '2px solid #8B1A1A', fontSize: '13px'
+                borderBottom: '2px solid #8B1A1A', fontSize: '12px'
               }}>
                 <span style={{ fontWeight: 800, color: '#8B1A1A' }}>
                   06007 — Walchand College of Engineering, Sangli
                 </span>
-                <span style={{
-                  marginLeft: '14px', fontSize: '11px', color: '#666', fontWeight: 400
-                }}>
-                  Government-Aided Autonomous &nbsp;|&nbsp; State CET Cell — Spot Round Vacancy
+                <span style={{ marginLeft: '12px', fontSize: '10.5px', color: '#64748B', fontWeight: 500 }}>
+                  Government-Aided Autonomous &nbsp;|&nbsp; State CET Cell — Spot Round Vacancy Matrix
                 </span>
               </td>
             </tr>
 
-            {/* Category headers (colspan=2 each for G / L) */}
-            <tr style={{ background: '#F0F0F0' }}>
-              <th style={th} rowSpan={2}>#</th>
-              <th style={{ ...th, textAlign: 'left', minWidth: '120px', maxWidth: '140px' }} rowSpan={2}>Branch / Course</th>
-              <th style={{ ...th, minWidth: '55px', maxWidth: '65px' }} rowSpan={2}>Type</th>
-              <th style={{ ...th, minWidth: '36px' }} rowSpan={2}>SI</th>
-              {!vacantOnly && CATEGORIES.map(cat => (
-                <th key={cat} style={{ ...th, borderBottom: '1px solid #CCC' }} colSpan={2}>
-                  {CAT_LABELS[cat]}
+            {/* Single Unified Header Row */}
+            <tr style={{ background: '#F1F5F9' }}>
+              <th style={th}>#</th>
+              <th style={{ ...th, textAlign: 'left', paddingLeft: '6px' }}>BRANCH / INTAKE</th>
+              <th style={{ ...th, textAlign: 'left', paddingLeft: '6px' }}>COURSE / SPECIALIZATION</th>
+              <th style={th}>QUOTA</th>
+              {CATEGORIES.map(c => (
+                <th key={c.key} style={{ ...th, background: c.bg || '#F1F5F9', color: c.color || '#1E293B', fontSize: '10px' }}>
+                  {c.label}
                 </th>
               ))}
-              {!vacantOnly && <th style={{ ...th, background: '#FFF9E6', minWidth: '52px' }} rowSpan={2}>TOTAL<br />(G+L)</th>}
-              <th style={{ ...th, background: '#FFFF00', color: '#000', minWidth: '70px', fontSize: '13px' }} rowSpan={2}>VACANT</th>
-            </tr>
-
-            {/* G / L sub-headers */}
-            <tr style={{ background: '#F8F8F8' }}>
-              {!vacantOnly && CATEGORIES.map(cat => (
-                <React.Fragment key={cat}>
-                  <th style={{ ...th, color: '#555', fontSize: '10px', fontWeight: 700 }}>G</th>
-                  <th style={{ ...th, color: '#D97706', fontSize: '10px', fontWeight: 700 }}>L</th>
-                </React.Fragment>
-              ))}
+              <th style={{ ...th, background: '#FEF3C7', color: '#92400E' }}>TOTAL</th>
+              <th style={{ ...th, background: '#FFFF00', color: '#000', fontSize: '10px', fontWeight: 900, padding: '4px 2px' }}>
+                GRAND<br />TOTAL
+              </th>
             </tr>
           </thead>
 
           <tbody>
             {branches.map((branch, idx) => {
               const isFlash = flashId === branch._id;
-              const rowTotal = getRowTotal(branch);
-              const vacant   = branch.totalVacant || 0;
-              const isAided  = branch.type === 'Aided';
+
+              const nonSponMatrixTotal = sumDetails(branch.nonSponsoredDetails);
+              const nonSponTotal = nonSponMatrixTotal > 0
+                ? nonSponMatrixTotal
+                : (branch.effectiveNonSponsoredVacant || branch.nonSponsoredVacant || 0);
+
+              const sponMatrixTotal = sumDetails(branch.sponsoredDetails);
+              const sponTotal = sponMatrixTotal > 0
+                ? sponMatrixTotal
+                : (branch.effectiveSponsoredVacant || branch.sponsoredVacant || 0);
+
+              const totalVacant = branch.totalVacant || (nonSponTotal + sponTotal);
 
               return (
-                <tr
-                  key={branch._id}
-                  className={isFlash ? 'seat-flash' : ''}
-                  style={{
-                    background: idx % 2 === 0 ? '#fff' : '#FAFAFA',
-                    borderBottom: '1px solid #E8E8E8',
-                    transition: 'background 0.3s'
-                  }}
-                >
-                  {/* # */}
-                  <td style={{ ...td, color: '#999', fontSize: '10px' }}>{idx + 1}</td>
+                <React.Fragment key={branch._id || idx}>
+                  {/* Row 1: Non-Sponsored */}
+                  <tr
+                    className={isFlash ? 'seat-flash' : ''}
+                    style={{
+                      background: idx % 2 === 0 ? '#ffffff' : '#f8fafc',
+                      borderTop: '1px solid #cbd5e1',
+                      transition: 'background 0.3s'
+                    }}
+                  >
+                    {/* # Index Column */}
+                    <td rowSpan={2} style={{ ...td, color: '#475569', fontWeight: 800, background: '#fff', fontSize: '11px' }}>
+                      {idx + 1}
+                    </td>
 
-                  {/* Branch name */}
-                  <td style={{ ...td, textAlign: 'left', fontWeight: 700, paddingLeft: '8px', color: 'var(--text-primary)', maxWidth: '140px', wordBreak: 'break-word', whiteSpace: 'normal' }}>
-                    {branch.name}
-                  </td>
+                    {/* Branch / Intake */}
+                    <td rowSpan={2} style={{ ...td, textAlign: 'left', paddingLeft: '6px', fontWeight: 800, color: 'var(--text-primary)', background: '#fff', wordWrap: 'break-word' }}>
+                      {branch.branchGroup || branch.name}
+                    </td>
 
-                  {/* Type */}
-                  <td style={{ ...td, maxWidth: '65px' }}>
-                    <span style={{
-                      display: 'inline-block', padding: '2px 5px', borderRadius: '12px',
-                      fontSize: '9px', fontWeight: 700, whiteSpace: 'nowrap',
-                      background: isAided ? 'rgba(37,99,235,0.1)' : 'rgba(217,119,6,0.1)',
-                      color: isAided ? '#2563EB' : '#D97706'
-                    }}>{branch.type}</span>
-                  </td>
+                    {/* Course / Specialization */}
+                    <td rowSpan={2} style={{ ...td, textAlign: 'left', paddingLeft: '6px', fontWeight: 700, color: '#334155', background: '#fff', wordWrap: 'break-word' }}>
+                      {branch.specialization || branch.name}
+                    </td>
 
-                  {/* Code */}
+                    {/* Quota label */}
+                    <td style={{ ...td, fontWeight: 700, color: '#1E293B', background: '#F8FAFC', fontSize: '10.5px', padding: '4px 2px' }}>
+                      Non-Sponsored
+                    </td>
 
-                  {/* SI */}
-                  <td style={{ ...td, color: '#666' }}>{branch.sanctionedIntake || '—'}</td>
-
-                  {/* G / L per category */}
-                  {!vacantOnly && CATEGORIES.map(cat => {
-                    const g = getG(branch, cat);
-                    const l = getL(branch, cat);
-                    return (
-                      <React.Fragment key={cat}>
-                        {/* General */}
-                        <td style={{
+                    {/* Category values for Non-Sponsored */}
+                    {CATEGORIES.map((cat, cIdx) => {
+                      const v = getCatSum(branch.nonSponsoredDetails, cat.key);
+                      return (
+                        <td key={cIdx} style={{
                           ...td,
-                          fontWeight: g > 0 ? 700 : 400,
-                          color: g > 0 ? '#059669' : '#CCC',
-                          borderRight: 'none'
+                          fontWeight: v > 0 ? 800 : 400,
+                          color: v > 0 ? '#059669' : '#94A3B8'
                         }}>
-                          {g > 0 ? g : <span style={{ color: '#CCC' }}>0</span>}
+                          {v > 0 ? v : 0}
                         </td>
-                        {/* Ladies */}
-                        <td style={{
+                      );
+                    })}
+
+                    {/* Non-Sponsored Row Total */}
+                    <td style={{ ...td, background: '#FEF3C7', fontWeight: 800, color: '#1E293B' }}>
+                      {nonSponTotal}
+                    </td>
+
+                    {/* Grand Total for course (yellow box spanning 2 rows) */}
+                    <td rowSpan={2} style={{
+                      ...td,
+                      background: '#FFFF00', color: '#000',
+                      fontWeight: 900, fontSize: '16px',
+                      borderLeft: '2px solid #CA8A04',
+                      verticalAlign: 'middle'
+                    }}>
+                      {totalVacant}
+                    </td>
+                  </tr>
+
+                  {/* Row 2: Sponsored */}
+                  <tr
+                    className={isFlash ? 'seat-flash' : ''}
+                    style={{
+                      background: idx % 2 === 0 ? '#ffffff' : '#f8fafc',
+                      borderBottom: '1px solid #cbd5e1',
+                      transition: 'background 0.3s'
+                    }}
+                  >
+                    {/* Quota label */}
+                    <td style={{ ...td, fontWeight: 700, color: '#1E293B', background: '#F8FAFC', fontSize: '10.5px', padding: '4px 2px' }}>
+                      Sponsored
+                    </td>
+
+                    {/* Category values for Sponsored */}
+                    {CATEGORIES.map((cat, cIdx) => {
+                      const v = getCatSum(branch.sponsoredDetails, cat.key);
+                      return (
+                        <td key={cIdx} style={{
                           ...td,
-                          fontWeight: l > 0 ? 700 : 400,
-                          color: l > 0 ? '#D97706' : '#CCC',
-                          borderLeft: '1px dashed #E0E0E0'
+                          fontWeight: v > 0 ? 800 : 400,
+                          color: v > 0 ? '#2563EB' : '#94A3B8'
                         }}>
-                          {l > 0 ? l : <span style={{ color: '#CCC' }}>0</span>}
+                          {v > 0 ? v : 0}
                         </td>
-                      </React.Fragment>
-                    );
-                  })}
+                      );
+                    })}
 
-                  {/* State Level Total */}
-                  {!vacantOnly && <td style={{ ...td, background: '#FFF9E6', fontWeight: 700, color: 'var(--text-primary)' }}>
-                    {rowTotal}
-                  </td>}
-
-                  {/* Overall Vacant + PWD/DEF breakdown */}
-                  {(() => {
-                    const pwdT = getPwdTotal(branch);
-                    const defT = getDefTotal(branch);
-                    return (
-                      <td style={{
-                        ...td,
-                        background: vacant > 0 ? '#F0FDF4' : '#FFF5F5',
-                        fontWeight: 900, fontSize: '17px',
-                        color: vacant > 0 ? '#059669' : '#DC2626',
-                        letterSpacing: '-0.5px',
-                        verticalAlign: 'middle',
-                        lineHeight: 1.1,
-                        padding: '6px 4px'
-                      }}>
-                        {vacant}
-                        {(pwdT > 0 || defT > 0) && (
-                          <div style={{
-                            marginTop: '5px',
-                            paddingTop: '4px',
-                            borderTop: '1px solid rgba(0,0,0,0.08)',
-                            display: 'flex',
-                            gap: '3px',
-                            justifyContent: 'center',
-                            flexWrap: 'wrap'
-                          }}>
-                            {pwdT > 0 && (
-                              <span style={{
-                                fontSize: '9px', fontWeight: 800, letterSpacing: 0,
-                                background: '#DC2626', color: '#fff',
-                                borderRadius: '3px', padding: '1px 5px',
-                                display: 'inline-block', whiteSpace: 'nowrap'
-                              }}>PWD:{pwdT}</span>
-                            )}
-                            {defT > 0 && (
-                              <span style={{
-                                fontSize: '9px', fontWeight: 800, letterSpacing: 0,
-                                background: '#D97706', color: '#fff',
-                                borderRadius: '3px', padding: '1px 5px',
-                                display: 'inline-block', whiteSpace: 'nowrap'
-                              }}>DEF:{defT}</span>
-                            )}
-                          </div>
-                        )}
-                      </td>
-                    );
-                  })()}
-
-                </tr>
+                    {/* Sponsored Row Total */}
+                    <td style={{ ...td, background: '#FEF3C7', fontWeight: 800, color: '#1E293B' }}>
+                      {sponTotal}
+                    </td>
+                  </tr>
+                </React.Fragment>
               );
             })}
+
+            {/* Bottom Summary Row */}
+            <tr style={{ background: '#F1F5F9', borderTop: '2.5px solid #8B1A1A', fontWeight: 900 }}>
+              <td colSpan={3} style={{ ...td, textAlign: 'right', paddingRight: '8px', fontWeight: 900, fontSize: '11px', color: '#8B1A1A' }}>
+                TOTAL VACANT SEATS:
+              </td>
+              <td style={{ ...td, fontWeight: 900, fontSize: '10px', color: '#334155' }}>
+                COMBINED
+              </td>
+              {CATEGORIES.map((_, i) => (
+                <td key={i} style={{ ...td, fontWeight: 800, color: colTotalsCombined[i] > 0 ? '#0F172A' : '#94A3B8' }}>
+                  {colTotalsCombined[i]}
+                </td>
+              ))}
+              <td style={{ ...td, background: '#FEF3C7', fontWeight: 900, fontSize: '12px', color: '#1E293B' }}>
+                {grandNonSponsoredTotal + grandSponsoredTotal}
+              </td>
+              <td style={{ ...td, background: '#FFFF00', color: '#000', fontWeight: 900, fontSize: '16px' }}>
+                {grandTotal}
+              </td>
+            </tr>
           </tbody>
 
         </table>
       </div>
     </section>
-
   );
 }
 
 // ── Style tokens ─────────────────────────────────────────────────────────────
 const th = {
-  padding: '6px 5px',
-  border: '1px solid #D0D0D0',
+  padding: '6px 3px',
+  border: '1px solid #CBD5E1',
   textAlign: 'center',
-  fontWeight: 700,
-  fontSize: '11px',
-  color: '#333',
+  fontWeight: 800,
+  fontSize: '10.5px',
+  color: '#1E293B',
   textTransform: 'uppercase',
-  letterSpacing: '0.3px',
-  whiteSpace: 'nowrap'
+  letterSpacing: '0.1px',
+  whiteSpace: 'nowrap',
+  verticalAlign: 'middle',
+  overflow: 'hidden'
 };
 
 const td = {
-  padding: '6px 5px',
-  border: '1px solid #E0E0E0',
+  padding: '5px 3px',
+  border: '1px solid #E2E8F0',
   textAlign: 'center',
   fontSize: '11px',
-  color: '#333',
-  verticalAlign: 'middle'
+  color: '#334155',
+  verticalAlign: 'middle',
+  overflow: 'hidden'
 };
-
-function pill(color) {
-  return {
-    fontSize: '9px', fontWeight: 700, padding: '1px 5px',
-    borderRadius: '8px', background: color + '18', color,
-    border: `1px solid ${color}44`, whiteSpace: 'nowrap'
-  };
-}
 
 export default BranchSummaryChart;

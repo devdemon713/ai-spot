@@ -221,16 +221,28 @@ function SeatMatrix({ branch, editable, onUpdate, flashId }) {
           branch.defCommonReserved || 0}
       </div>
 
-      {/* Footer */}
-      <div className="seat-matrix-footer">
+      {/* Footer / Quota Breakdown */}
+      <div className="seat-matrix-footer" style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
+        <span style={{ fontWeight: 700, color: '#2563EB' }}>
+          Sponsored Vacant Seats: {editable ?
+            <input type="number" className="seat-input" value={branch.sponsoredVacant || 0}
+              onChange={(e) => handleEdit('sponsoredVacant', null, null, e.target.value)} /> :
+            (branch.sponsoredVacant || 0)}
+        </span>
+        <span style={{ fontWeight: 700, color: '#7C3AED' }}>
+          Non-Sponsored Vacant Seats: {editable ?
+            <input type="number" className="seat-input" value={branch.nonSponsoredVacant || 0}
+              onChange={(e) => handleEdit('nonSponsoredVacant', null, null, e.target.value)} /> :
+            (branch.effectiveNonSponsoredVacant || branch.nonSponsoredVacant || 0)}
+        </span>
         <span>
-          Economically Weaker Section (EWS) Seats: {editable ?
+          EWS Seats: {editable ?
             <input type="number" className="seat-input" value={branch.ewsSeats || 0}
               onChange={(e) => handleEdit('ewsSeats', null, null, e.target.value)} /> :
             branch.ewsSeats || 0}
         </span>
         <span>
-          Tuition Fee Waiver Scheme Choice Code: {branch.tfwsChoiceCode || 'N/A'} &nbsp;
+          TFWS Choice Code: {branch.tfwsChoiceCode || 'N/A'} &nbsp;
           Seats: {branch.tfwsSeats || 0}
         </span>
       </div>

@@ -62,6 +62,7 @@ function AdminDashboard() {
   const [selectedBranch, setSelectedBranch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('OPEN');
   const [selectedType, setSelectedType] = useState('general');
+  const [selectedPool, setSelectedPool] = useState('nonSponsoredSeats');
   const [allocating, setAllocating] = useState(false);
 
   // Manual student picker filters
@@ -190,7 +191,7 @@ function AdminDashboard() {
         branchId: selectedBranch,
         seatCategory: selectedCategory,
         seatType: selectedType,
-        seatPool: 'stateLevel'
+        seatPool: selectedPool
       });
       showMsg("Student's seat has been secured successfully!");
       fetchAll();
@@ -755,6 +756,15 @@ function AdminDashboard() {
                           {b.choiceCode} — {b.name} ({b.type}) — Vacant: {b.totalVacant}
                         </option>
                       ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Seat Quota / Pool <span className="required">*</span></label>
+                    <select value={selectedPool} onChange={(e) => setSelectedPool(e.target.value)}>
+                      <option value="nonSponsoredSeats">Non-Sponsored Seats</option>
+                      <option value="sponsoredSeats">Sponsored Seats</option>
+                      <option value="stateLevel">State Level Category Seats</option>
                     </select>
                   </div>
 

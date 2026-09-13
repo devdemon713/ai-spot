@@ -23,7 +23,7 @@ const allocationSchema = new mongoose.Schema({
   },
   seatPool: {
     type: String,
-    enum: ['stateLevel', 'pwd', 'def', 'pwdCommonReserved', 'defCommonReserved', 'ewsSeats', 'allIndiaSeats', 'instituteSeats', 'minoritySeats', 'orphanSeats'],
+    enum: ['stateLevel', 'pwd', 'def', 'pwdCommonReserved', 'defCommonReserved', 'ewsSeats', 'allIndiaSeats', 'instituteSeats', 'minoritySeats', 'orphanSeats', 'sponsoredSeats', 'nonSponsoredSeats', 'sponsored', 'nonSponsored'],
     default: 'stateLevel'
   },
   allocatedBy: {

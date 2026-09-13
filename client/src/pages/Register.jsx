@@ -28,6 +28,7 @@ const DEF_TYPE_OPTIONS = [
 
 const INITIAL_FORM = {
   studentType:        'CAP',
+  candidateType:      'Non-Sponsored',
   applicationId:      '',
   fullName:           '',
   email:              '',
@@ -43,6 +44,7 @@ const INITIAL_FORM = {
   phType:             'Not Applicable',
   defenceType:        'Not Applicable',
   isOrphan:           false,
+  isSponsored:        false,
   mhtCetPercentile:   '',
   mathPercentile:     '',
   physicsPercentile:  '',
@@ -97,6 +99,7 @@ function Register() {
     try {
       const submitData = { ...formData };
       delete submitData.confirmPassword;
+      submitData.isSponsored = formData.candidateType === 'Sponsored';
       // Convert numeric strings
       const numFields = [
         'wceMeritNumber', 'stateMeritNumber',
@@ -146,8 +149,8 @@ function Register() {
             <ol>
               <li>If your name is in the CAP merit list, select <strong>CAP Student</strong>.</li>
               <li>If you appeared for CET but did not complete CAP registration, select <strong>Non-CAP Student</strong>.</li>
+              <li>Select your seat quota type: <strong>Non-Sponsored</strong> or <strong>Sponsored</strong> candidate.</li>
               <li>Enter your <strong>MHT-CET Application ID</strong> exactly as it appears on your scorecard.</li>
-              <li>Enter percentiles from your <strong>MHT-CET scorecard</strong> — Total, Math, Physics, Chemistry.</li>
               <li>All fields marked <span style={{ color: 'red' }}>*</span> are mandatory.</li>
             </ol>
           </div>
@@ -162,13 +165,20 @@ function Register() {
               <form onSubmit={handleSubmit}>
                 <div className="form-grid">
 
-                  {/* ── Student Type ── */}
-                  {sectionTitle('Student Type')}
-                  <div className="form-group full-width">
+                  {/* ── Student & Candidate Quota Type ── */}
+                  {sectionTitle('Student Type & Seat Quota')}
+                  <div className="form-group">
                     <label htmlFor="studentType">Student Type <span className="required">*</span></label>
                     <select id="studentType" name="studentType" value={formData.studentType} onChange={handleChange}>
                       <option value="CAP">CAP Student (MHT-CET CAP Merit List)</option>
                       <option value="Non-CAP">Non-CAP Student (Appeared for CET / JEE)</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="candidateType">Candidate Quota <span className="required">*</span></label>
+                    <select id="candidateType" name="candidateType" value={formData.candidateType} onChange={handleChange}>
+                      <option value="Non-Sponsored">Non-Sponsored Candidate</option>
+                      <option value="Sponsored">Sponsored Candidate</option>
                     </select>
                   </div>
 

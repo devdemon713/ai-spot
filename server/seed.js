@@ -11,410 +11,245 @@ const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/wce-spot-r
 const branches = [
   {
     choiceCode: '0600719110',
-    name: 'Civil Engineering',
+    branchGroup: '1. CIVIL Aided',
+    name: 'Construction Management',
+    specialization: 'Un-Aided Construction Management',
     type: 'Aided',
     sanctionedIntake: 60,
-    msSeats: 2,
-    minoritySeats: 0,
-    allIndiaSeats: 0,
-    instituteSeats: 1,
-    orphanSeats: 0,
-    stateLevel: {
-      OPEN: { general: 2, ladies: 0 },
-      SC: { general: 0, ladies: 0 },
-      ST: { general: 0, ladies: 0 },
-      VJ_DT: { general: 0, ladies: 0 },
-      NTB: { general: 0, ladies: 0 },
-      NTC: { general: 0, ladies: 0 },
-      NTD: { general: 0, ladies: 0 },
-      OBC: { general: 0, ladies: 0 },
-      SEBC: { general: 0, ladies: 0 }
+    nonSponsoredDetails: {
+      OPEN: { general: 2, ladies: 0, pw: 0, def: 0 },
+      ORPHAN: { general: 0 },
+      SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 }, VJ_DT: { general: 0, ladies: 0 },
+      NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 }, NTD: { general: 0, ladies: 0 },
+      OBC: { general: 1, ladies: 0 }, PwCR: 1, DEFCR: 1, SEBC: { general: 0, ladies: 0 }
     },
-    pwd: {
-      OPEN: { general: 0, ladies: 0 }, SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 },
-      VJ_DT: { general: 0, ladies: 0 }, NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 },
-      NTD: { general: 0, ladies: 0 }, OBC: { general: 0, ladies: 0 }, SEBC: { general: 0, ladies: 0 }
-    },
-    def: {
-      OPEN: { general: 0, ladies: 0 }, SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 },
-      VJ_DT: { general: 0, ladies: 0 }, NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 },
-      NTD: { general: 0, ladies: 0 }, OBC: { general: 0, ladies: 0 }, SEBC: { general: 0, ladies: 0 }
-    },
-    pwdCommonReserved: 0,
-    defCommonReserved: 0,
-    ewsSeats: 0,
-    tfwsChoiceCode: '0600719111T',
-    tfwsSeats: 0
+    sponsoredDetails: {
+      OPEN: { general: 2, ladies: 0, pw: 0, def: 0 },
+      ORPHAN: { general: 0 },
+      SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 }, VJ_DT: { general: 0, ladies: 0 },
+      NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 }, NTD: { general: 0, ladies: 0 },
+      OBC: { general: 0, ladies: 0 }, PwCR: 0, DEFCR: 0, SEBC: { general: 0, ladies: 0 }
+    }
   },
   {
-    choiceCode: '0600761210',
-    name: 'Mechanical Engineering',
-    type: 'Aided',
+    choiceCode: '0600719120U',
+    branchGroup: '2. CIVIL Un-Aided',
+    name: 'CIVIL-Environment',
+    specialization: 'Un-Aided CIVIL-Environment',
+    type: 'Unaided',
     sanctionedIntake: 60,
-    msSeats: 4,
-    minoritySeats: 0,
-    allIndiaSeats: 0,
-    instituteSeats: 2,
-    orphanSeats: 0,
-    stateLevel: {
-      OPEN: { general: 3, ladies: 1 },
-      SC: { general: 1, ladies: 0 },
-      ST: { general: 0, ladies: 0 },
-      VJ_DT: { general: 0, ladies: 0 },
-      NTB: { general: 0, ladies: 0 },
-      NTC: { general: 0, ladies: 0 },
-      NTD: { general: 0, ladies: 0 },
-      OBC: { general: 1, ladies: 0 },
-      SEBC: { general: 0, ladies: 0 }
+    nonSponsoredDetails: {
+      OPEN: { general: 2, ladies: 0, pw: 0, def: 0 },
+      ORPHAN: { general: 0 },
+      SC: { general: 1, ladies: 0 }, ST: { general: 1, ladies: 0 }, VJ_DT: { general: 0, ladies: 0 },
+      NTB: { general: 0, ladies: 0 }, NTC: { general: 1, ladies: 0 }, NTD: { general: 0, ladies: 0 },
+      OBC: { general: 3, ladies: 0 }, PwCR: 1, DEFCR: 1, SEBC: { general: 2, ladies: 0 }
     },
-    pwd: {
-      OPEN: { general: 0, ladies: 0 }, SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 },
-      VJ_DT: { general: 0, ladies: 0 }, NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 },
-      NTD: { general: 0, ladies: 0 }, OBC: { general: 0, ladies: 0 }, SEBC: { general: 0, ladies: 0 }
-    },
-    def: {
-      OPEN: { general: 0, ladies: 0 }, SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 },
-      VJ_DT: { general: 0, ladies: 0 }, NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 },
-      NTD: { general: 0, ladies: 0 }, OBC: { general: 0, ladies: 0 }, SEBC: { general: 0, ladies: 0 }
-    },
-    pwdCommonReserved: 0,
-    defCommonReserved: 0,
-    ewsSeats: 0,
-    tfwsChoiceCode: '0600761211T',
-    tfwsSeats: 0
-  },
-  {
-    choiceCode: '0600729310',
-    name: 'Electrical Engineering',
-    type: 'Aided',
-    sanctionedIntake: 60,
-    msSeats: 5,
-    minoritySeats: 0,
-    allIndiaSeats: 0,
-    instituteSeats: 1,
-    orphanSeats: 0,
-    stateLevel: {
-      OPEN: { general: 4, ladies: 1 },
-      SC: { general: 1, ladies: 0 },
-      ST: { general: 1, ladies: 0 },
-      VJ_DT: { general: 0, ladies: 0 },
-      NTB: { general: 0, ladies: 0 },
-      NTC: { general: 0, ladies: 0 },
-      NTD: { general: 1, ladies: 0 },
-      OBC: { general: 0, ladies: 1 },
-      SEBC: { general: 0, ladies: 0 }
-    },
-    pwd: {
-      OPEN: { general: 0, ladies: 0 }, SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 },
-      VJ_DT: { general: 0, ladies: 0 }, NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 },
-      NTD: { general: 0, ladies: 0 }, OBC: { general: 0, ladies: 0 }, SEBC: { general: 0, ladies: 0 }
-    },
-    def: {
-      OPEN: { general: 0, ladies: 0 }, SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 },
-      VJ_DT: { general: 0, ladies: 0 }, NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 },
-      NTD: { general: 0, ladies: 0 }, OBC: { general: 0, ladies: 0 }, SEBC: { general: 0, ladies: 0 }
-    },
-    pwdCommonReserved: 0,
-    defCommonReserved: 0,
-    ewsSeats: 0,
-    tfwsChoiceCode: '0600729311T',
-    tfwsSeats: 0
-  },
-  {
-    choiceCode: '0600737610',
-    name: 'Electronics Engineering',
-    type: 'Aided',
-    sanctionedIntake: 60,
-    msSeats: 6,
-    minoritySeats: 0,
-    allIndiaSeats: 0,
-    instituteSeats: 1,
-    orphanSeats: 0,
-    stateLevel: {
-      OPEN: { general: 5, ladies: 2 },
-      SC: { general: 1, ladies: 0 },
-      ST: { general: 0, ladies: 0 },
-      VJ_DT: { general: 0, ladies: 0 },
-      NTB: { general: 1, ladies: 0 },
-      NTC: { general: 0, ladies: 0 },
-      NTD: { general: 0, ladies: 0 },
-      OBC: { general: 1, ladies: 0 },
-      SEBC: { general: 0, ladies: 0 }
-    },
-    pwd: {
-      OPEN: { general: 0, ladies: 0 }, SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 },
-      VJ_DT: { general: 0, ladies: 0 }, NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 },
-      NTD: { general: 0, ladies: 0 }, OBC: { general: 0, ladies: 0 }, SEBC: { general: 0, ladies: 0 }
-    },
-    def: {
-      OPEN: { general: 0, ladies: 0 }, SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 },
-      VJ_DT: { general: 0, ladies: 0 }, NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 },
-      NTD: { general: 0, ladies: 0 }, OBC: { general: 0, ladies: 0 }, SEBC: { general: 0, ladies: 0 }
-    },
-    pwdCommonReserved: 0,
-    defCommonReserved: 0,
-    ewsSeats: 0,
-    tfwsChoiceCode: '0600737611T',
-    tfwsSeats: 0
+    sponsoredDetails: {
+      OPEN: { general: 3, ladies: 0, pw: 0, def: 0 },
+      ORPHAN: { general: 0 },
+      SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 }, VJ_DT: { general: 0, ladies: 0 },
+      NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 }, NTD: { general: 0, ladies: 0 },
+      OBC: { general: 0, ladies: 0 }, PwCR: 0, DEFCR: 0, SEBC: { general: 0, ladies: 0 }
+    }
   },
   {
     choiceCode: '0600724210',
-    name: 'Computer Science and Engineering',
+    branchGroup: '3. CSE Aided',
+    name: 'CSE Design',
+    specialization: 'Un-Aided CSE Design',
     type: 'Aided',
-    sanctionedIntake: 90,
-    msSeats: 9,
-    minoritySeats: 0,
-    allIndiaSeats: 0,
-    instituteSeats: 4,
-    orphanSeats: 0,
-    stateLevel: {
-      OPEN: { general: 3, ladies: 0 },
-      SC: { general: 0, ladies: 0 },
-      ST: { general: 2, ladies: 1 },
-      VJ_DT: { general: 0, ladies: 0 },
-      NTB: { general: 0, ladies: 0 },
-      NTC: { general: 0, ladies: 1 },
-      NTD: { general: 1, ladies: 0 },
-      OBC: { general: 0, ladies: 1 },
-      SEBC: { general: 0, ladies: 0 }
+    sanctionedIntake: 60,
+    nonSponsoredDetails: {
+      OPEN: { general: 2, ladies: 0, pw: 0, def: 0 },
+      ORPHAN: { general: 0 },
+      SC: { general: 1, ladies: 0 }, ST: { general: 1, ladies: 0 }, VJ_DT: { general: 0, ladies: 0 },
+      NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 }, NTD: { general: 0, ladies: 0 },
+      OBC: { general: 3, ladies: 0 }, PwCR: 1, DEFCR: 1, SEBC: { general: 0, ladies: 0 }
     },
-    pwd: {
-      OPEN: { general: 0, ladies: 0 }, SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 },
-      VJ_DT: { general: 0, ladies: 0 }, NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 },
-      NTD: { general: 0, ladies: 0 }, OBC: { general: 0, ladies: 0 }, SEBC: { general: 0, ladies: 0 }
-    },
-    def: {
-      OPEN: { general: 0, ladies: 0 }, SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 },
-      VJ_DT: { general: 0, ladies: 0 }, NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 },
-      NTD: { general: 0, ladies: 0 }, OBC: { general: 0, ladies: 0 }, SEBC: { general: 0, ladies: 0 }
-    },
-    pwdCommonReserved: 0,
-    defCommonReserved: 0,
-    ewsSeats: 0,
-    tfwsChoiceCode: '0600724211T',
-    tfwsSeats: 0
+    sponsoredDetails: {
+      OPEN: { general: 4, ladies: 0, pw: 0, def: 0 },
+      ORPHAN: { general: 0 },
+      SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 }, VJ_DT: { general: 0, ladies: 0 },
+      NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 }, NTD: { general: 0, ladies: 0 },
+      OBC: { general: 0, ladies: 0 }, PwCR: 0, DEFCR: 0, SEBC: { general: 0, ladies: 0 }
+    }
   },
   {
     choiceCode: '0600724270U',
-    name: 'Computer Science and Engineering',
+    branchGroup: '4. CSE Un-Aided',
+    name: 'ETC',
+    specialization: 'Un-Aided ETC',
     type: 'Unaided',
-    sanctionedIntake: 90,
-    msSeats: 8,
-    minoritySeats: 0,
-    allIndiaSeats: 5,
-    instituteSeats: 0,
-    orphanSeats: 0,
-    stateLevel: {
-      OPEN: { general: 4, ladies: 0 },
-      SC: { general: 2, ladies: 0 },
-      ST: { general: 0, ladies: 0 },
-      VJ_DT: { general: 0, ladies: 1 },
-      NTB: { general: 0, ladies: 0 },
-      NTC: { general: 0, ladies: 0 },
-      NTD: { general: 0, ladies: 0 },
-      OBC: { general: 0, ladies: 0 },
-      SEBC: { general: 0, ladies: 0 }
+    sanctionedIntake: 60,
+    nonSponsoredDetails: {
+      OPEN: { general: 0, ladies: 0, pw: 0, def: 0 },
+      ORPHAN: { general: 1 },
+      SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 }, VJ_DT: { general: 0, ladies: 0 },
+      NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 }, NTD: { general: 0, ladies: 0 },
+      OBC: { general: 0, ladies: 0 }, PwCR: 0, DEFCR: 0, SEBC: { general: 0, ladies: 0 }
     },
-    pwd: {
-      OPEN: { general: 0, ladies: 0 }, SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 },
-      VJ_DT: { general: 0, ladies: 0 }, NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 },
-      NTD: { general: 0, ladies: 0 }, OBC: { general: 0, ladies: 0 }, SEBC: { general: 0, ladies: 0 }
-    },
-    def: {
-      OPEN: { general: 1, ladies: 0 }, SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 },
-      VJ_DT: { general: 0, ladies: 0 }, NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 },
-      NTD: { general: 0, ladies: 0 }, OBC: { general: 0, ladies: 0 }, SEBC: { general: 0, ladies: 0 }
-    },
-    pwdCommonReserved: 0,
-    defCommonReserved: 0,
-    ewsSeats: 0,
-    tfwsChoiceCode: '0600724271UT',
-    tfwsSeats: 0
+    sponsoredDetails: {
+      OPEN: { general: 0, ladies: 0, pw: 0, def: 0 },
+      ORPHAN: { general: 0 },
+      SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 }, VJ_DT: { general: 0, ladies: 0 },
+      NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 }, NTD: { general: 0, ladies: 0 },
+      OBC: { general: 0, ladies: 0 }, PwCR: 0, DEFCR: 0, SEBC: { general: 0, ladies: 0 }
+    }
   },
   {
     choiceCode: '0600724610',
-    name: 'Information Technology',
+    branchGroup: '5. I.T. Aided',
+    name: 'Elect-Cont- & INST',
+    specialization: 'Un-Aided Elect-Cont- & INST',
     type: 'Aided',
     sanctionedIntake: 60,
-    msSeats: 6,
-    minoritySeats: 0,
-    allIndiaSeats: 0,
-    instituteSeats: 1,
-    orphanSeats: 0,
-    stateLevel: {
-      OPEN: { general: 2, ladies: 1 },
-      SC: { general: 0, ladies: 0 },
-      ST: { general: 0, ladies: 0 },
-      VJ_DT: { general: 0, ladies: 0 },
-      NTB: { general: 1, ladies: 0 },
-      NTC: { general: 0, ladies: 0 },
-      NTD: { general: 0, ladies: 0 },
-      OBC: { general: 0, ladies: 1 },
-      SEBC: { general: 0, ladies: 1 }
+    nonSponsoredDetails: {
+      OPEN: { general: 0, ladies: 0, pw: 0, def: 0 },
+      ORPHAN: { general: 0 },
+      SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 }, VJ_DT: { general: 0, ladies: 0 },
+      NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 }, NTD: { general: 0, ladies: 0 },
+      OBC: { general: 0, ladies: 0 }, PwCR: 0, DEFCR: 0, SEBC: { general: 0, ladies: 0 }
     },
-    pwd: {
-      OPEN: { general: 0, ladies: 0 }, SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 },
-      VJ_DT: { general: 0, ladies: 0 }, NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 },
-      NTD: { general: 0, ladies: 0 }, OBC: { general: 0, ladies: 0 }, SEBC: { general: 0, ladies: 0 }
-    },
-    def: {
-      OPEN: { general: 0, ladies: 0 }, SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 },
-      VJ_DT: { general: 0, ladies: 0 }, NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 },
-      NTD: { general: 0, ladies: 0 }, OBC: { general: 0, ladies: 0 }, SEBC: { general: 0, ladies: 0 }
-    },
-    pwdCommonReserved: 0,
-    defCommonReserved: 0,
-    ewsSeats: 0,
-    tfwsChoiceCode: '0600724611T',
-    tfwsSeats: 0
+    sponsoredDetails: {
+      OPEN: { general: 2, ladies: 0, pw: 0, def: 0 },
+      ORPHAN: { general: 0 },
+      SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 }, VJ_DT: { general: 0, ladies: 0 },
+      NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 }, NTD: { general: 0, ladies: 0 },
+      OBC: { general: 0, ladies: 0 }, PwCR: 0, DEFCR: 0, SEBC: { general: 0, ladies: 0 }
+    }
   },
   {
-    choiceCode: '0600724670U',
-    name: 'Information Technology',
-    type: 'Unaided',
+    choiceCode: '0600761210',
+    branchGroup: '6. Mechanical Aided',
+    name: 'Manufacturing Engineering',
+    specialization: 'Un-Aided Manuf. Engi',
+    type: 'Aided',
     sanctionedIntake: 60,
-    msSeats: 5,
-    minoritySeats: 0,
-    allIndiaSeats: 3,
-    instituteSeats: 0,
-    orphanSeats: 0,
-    stateLevel: {
-      OPEN: { general: 3, ladies: 1 },
-      SC: { general: 1, ladies: 0 },
-      ST: { general: 0, ladies: 0 },
-      VJ_DT: { general: 0, ladies: 0 },
-      NTB: { general: 0, ladies: 0 },
-      NTC: { general: 0, ladies: 0 },
-      NTD: { general: 0, ladies: 0 },
-      OBC: { general: 1, ladies: 0 },
-      SEBC: { general: 0, ladies: 0 }
+    nonSponsoredDetails: {
+      OPEN: { general: 2, ladies: 0, pw: 0, def: 0 },
+      ORPHAN: { general: 0 },
+      SC: { general: 0, ladies: 0 }, ST: { general: 1, ladies: 0 }, VJ_DT: { general: 1, ladies: 0 },
+      NTB: { general: 1, ladies: 0 }, NTC: { general: 0, ladies: 0 }, NTD: { general: 0, ladies: 0 },
+      OBC: { general: 1, ladies: 0 }, PwCR: 1, DEFCR: 1, SEBC: { general: 1, ladies: 0 }
     },
-    pwd: {
-      OPEN: { general: 0, ladies: 0 }, SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 },
-      VJ_DT: { general: 0, ladies: 0 }, NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 },
-      NTD: { general: 0, ladies: 0 }, OBC: { general: 0, ladies: 0 }, SEBC: { general: 0, ladies: 0 }
-    },
-    def: {
-      OPEN: { general: 0, ladies: 0 }, SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 },
-      VJ_DT: { general: 0, ladies: 0 }, NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 },
-      NTD: { general: 0, ladies: 0 }, OBC: { general: 0, ladies: 0 }, SEBC: { general: 0, ladies: 0 }
-    },
-    pwdCommonReserved: 0,
-    defCommonReserved: 0,
-    ewsSeats: 0,
-    tfwsChoiceCode: '0600724671UT',
-    tfwsSeats: 0
+    sponsoredDetails: {
+      OPEN: { general: 2, ladies: 0, pw: 0, def: 0 },
+      ORPHAN: { general: 0 },
+      SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 }, VJ_DT: { general: 0, ladies: 0 },
+      NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 }, NTD: { general: 0, ladies: 0 },
+      OBC: { general: 0, ladies: 0 }, PwCR: 0, DEFCR: 0, SEBC: { general: 0, ladies: 0 }
+    }
   },
   {
-    choiceCode: '0600721970U',
-    name: 'Robotics and Automation',
-    type: 'Unaided',
+    choiceCode: '0600761220',
+    branchGroup: '7. Mechanical Aided',
+    name: 'Thermal Engineering',
+    specialization: 'Un-Aided Thermal Engni',
+    type: 'Aided',
     sanctionedIntake: 60,
-    msSeats: 6,
-    minoritySeats: 0,
-    allIndiaSeats: 3,
-    instituteSeats: 0,
-    orphanSeats: 0,
-    stateLevel: {
-      OPEN: { general: 5, ladies: 0 },
-      SC: { general: 0, ladies: 1 },
-      ST: { general: 0, ladies: 0 },
-      VJ_DT: { general: 0, ladies: 0 },
-      NTB: { general: 0, ladies: 0 },
-      NTC: { general: 0, ladies: 0 },
-      NTD: { general: 0, ladies: 0 },
-      OBC: { general: 0, ladies: 0 },
-      SEBC: { general: 0, ladies: 0 }
+    nonSponsoredDetails: {
+      OPEN: { general: 3, ladies: 0, pw: 0, def: 0 },
+      ORPHAN: { general: 0 },
+      SC: { general: 1, ladies: 0 }, ST: { general: 1, ladies: 0 }, VJ_DT: { general: 0, ladies: 0 },
+      NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 }, NTD: { general: 0, ladies: 0 },
+      OBC: { general: 2, ladies: 0 }, PwCR: 1, DEFCR: 1, SEBC: { general: 1, ladies: 0 }
     },
-    pwd: {
-      OPEN: { general: 0, ladies: 0 }, SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 },
-      VJ_DT: { general: 0, ladies: 0 }, NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 },
-      NTD: { general: 0, ladies: 0 }, OBC: { general: 0, ladies: 0 }, SEBC: { general: 0, ladies: 0 }
+    sponsoredDetails: {
+      OPEN: { general: 3, ladies: 0, pw: 0, def: 0 },
+      ORPHAN: { general: 0 },
+      SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 }, VJ_DT: { general: 0, ladies: 0 },
+      NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 }, NTD: { general: 0, ladies: 0 },
+      OBC: { general: 0, ladies: 0 }, PwCR: 0, DEFCR: 0, SEBC: { general: 0, ladies: 0 }
+    }
+  },
+  {
+    choiceCode: '0600737610',
+    branchGroup: '8. Electronics Aided',
+    name: 'Data Science',
+    specialization: 'Un-Aided Data Science',
+    type: 'Aided',
+    sanctionedIntake: 60,
+    nonSponsoredDetails: {
+      OPEN: { general: 0, ladies: 0, pw: 0, def: 0 },
+      ORPHAN: { general: 0 },
+      SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 }, VJ_DT: { general: 0, ladies: 0 },
+      NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 }, NTD: { general: 0, ladies: 0 },
+      OBC: { general: 1, ladies: 0 }, PwCR: 1, DEFCR: 1, SEBC: { general: 0, ladies: 0 }
     },
-    def: {
-      OPEN: { general: 0, ladies: 0 }, SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 },
-      VJ_DT: { general: 0, ladies: 0 }, NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 },
-      NTD: { general: 0, ladies: 0 }, OBC: { general: 0, ladies: 0 }, SEBC: { general: 0, ladies: 0 }
+    sponsoredDetails: {
+      OPEN: { general: 1, ladies: 0, pw: 0, def: 0 },
+      ORPHAN: { general: 0 },
+      SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 }, VJ_DT: { general: 0, ladies: 0 },
+      NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 }, NTD: { general: 0, ladies: 0 },
+      OBC: { general: 0, ladies: 0 }, PwCR: 0, DEFCR: 0, SEBC: { general: 0, ladies: 0 }
+    }
+  },
+  {
+    choiceCode: '0600761230',
+    branchGroup: '9. Mechanical Aided',
+    name: 'Structural Engineering',
+    specialization: 'Un-Aided Civil-Structure',
+    type: 'Aided',
+    sanctionedIntake: 60,
+    nonSponsoredDetails: {
+      OPEN: { general: 0, ladies: 0, pw: 0, def: 0 },
+      ORPHAN: { general: 0 },
+      SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 }, VJ_DT: { general: 0, ladies: 0 },
+      NTB: { general: 1, ladies: 0 }, NTC: { general: 0, ladies: 0 }, NTD: { general: 0, ladies: 0 },
+      OBC: { general: 0, ladies: 0 }, PwCR: 0, DEFCR: 0, SEBC: { general: 0, ladies: 0 }
     },
-    pwdCommonReserved: 1,
-    defCommonReserved: 0,
-    ewsSeats: 0,
-    tfwsChoiceCode: '0600721971UT',
-    tfwsSeats: 0
+    sponsoredDetails: {
+      OPEN: { general: 1, ladies: 0, pw: 0, def: 0 },
+      ORPHAN: { general: 0 },
+      SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 }, VJ_DT: { general: 0, ladies: 0 },
+      NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 }, NTD: { general: 0, ladies: 0 },
+      OBC: { general: 0, ladies: 0 }, PwCR: 0, DEFCR: 0, SEBC: { general: 0, ladies: 0 }
+    }
   },
   {
     choiceCode: '0600792170U',
-    name: 'Artificial Intelligence and Machine Learning',
+    branchGroup: '10. AIML Un-Aided',
+    name: 'Computer Science and Engineering',
+    specialization: 'Un-Aided CSE',
     type: 'Unaided',
     sanctionedIntake: 60,
-    msSeats: 5,
-    minoritySeats: 0,
-    allIndiaSeats: 2,
-    instituteSeats: 0,
-    orphanSeats: 0,
-    stateLevel: {
-      OPEN: { general: 3, ladies: 1 },
-      SC: { general: 1, ladies: 0 },
-      ST: { general: 0, ladies: 0 },
-      VJ_DT: { general: 0, ladies: 0 },
-      NTB: { general: 0, ladies: 0 },
-      NTC: { general: 0, ladies: 0 },
-      NTD: { general: 0, ladies: 0 },
-      OBC: { general: 1, ladies: 0 },
-      SEBC: { general: 0, ladies: 0 }
+    nonSponsoredDetails: {
+      OPEN: { general: 0, ladies: 0, pw: 0, def: 0 },
+      ORPHAN: { general: 0 },
+      SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 }, VJ_DT: { general: 0, ladies: 0 },
+      NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 }, NTD: { general: 0, ladies: 0 },
+      OBC: { general: 0, ladies: 0 }, PwCR: 0, DEFCR: 0, SEBC: { general: 0, ladies: 0 }
     },
-    pwd: {
-      OPEN: { general: 0, ladies: 0 }, SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 },
-      VJ_DT: { general: 0, ladies: 0 }, NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 },
-      NTD: { general: 0, ladies: 0 }, OBC: { general: 0, ladies: 0 }, SEBC: { general: 0, ladies: 0 }
-    },
-    def: {
-      OPEN: { general: 0, ladies: 0 }, SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 },
-      VJ_DT: { general: 0, ladies: 0 }, NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 },
-      NTD: { general: 0, ladies: 0 }, OBC: { general: 0, ladies: 0 }, SEBC: { general: 0, ladies: 0 }
-    },
-    pwdCommonReserved: 0,
-    defCommonReserved: 0,
-    ewsSeats: 0,
-    tfwsChoiceCode: '0600792171UT',
-    tfwsSeats: 0
+    sponsoredDetails: {
+      OPEN: { general: 0, ladies: 0, pw: 0, def: 0 },
+      ORPHAN: { general: 0 },
+      SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 }, VJ_DT: { general: 0, ladies: 0 },
+      NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 }, NTD: { general: 0, ladies: 0 },
+      OBC: { general: 0, ladies: 0 }, PwCR: 0, DEFCR: 0, SEBC: { general: 0, ladies: 0 }
+    }
   },
   {
-    choiceCode: '06000738810U',
-    name: 'VLSI Design & Technology',
+    choiceCode: '0600792180U',
+    branchGroup: '11. AIML Un-Aided',
+    name: 'Electrical Power System',
+    specialization: 'Un-Aided Elect-Power system',
     type: 'Unaided',
     sanctionedIntake: 60,
-    msSeats: 0,
-    minoritySeats: 0,
-    allIndiaSeats: 0,
-    instituteSeats: 0,
-    orphanSeats: 0,
-    stateLevel: {
-      OPEN: { general: 0, ladies: 0 },
-      SC: { general: 0, ladies: 0 },
-      ST: { general: 0, ladies: 0 },
-      VJ_DT: { general: 0, ladies: 0 },
-      NTB: { general: 0, ladies: 0 },
-      NTC: { general: 0, ladies: 0 },
-      NTD: { general: 0, ladies: 0 },
-      OBC: { general: 0, ladies: 0 },
-      SEBC: { general: 0, ladies: 0 }
+    nonSponsoredDetails: {
+      OPEN: { general: 1, ladies: 0, pw: 0, def: 0 },
+      ORPHAN: { general: 0 },
+      SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 }, VJ_DT: { general: 0, ladies: 0 },
+      NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 }, NTD: { general: 0, ladies: 0 },
+      OBC: { general: 0, ladies: 0 }, PwCR: 0, DEFCR: 0, SEBC: { general: 0, ladies: 0 }
     },
-    pwd: {
-      OPEN: { general: 0, ladies: 0 }, SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 },
-      VJ_DT: { general: 0, ladies: 0 }, NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 },
-      NTD: { general: 0, ladies: 0 }, OBC: { general: 0, ladies: 0 }, SEBC: { general: 0, ladies: 0 }
-    },
-    def: {
-      OPEN: { general: 0, ladies: 0 }, SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 },
-      VJ_DT: { general: 0, ladies: 0 }, NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 },
-      NTD: { general: 0, ladies: 0 }, OBC: { general: 0, ladies: 0 }, SEBC: { general: 0, ladies: 0 }
-    },
-    pwdCommonReserved: 0,
-    defCommonReserved: 0,
-    ewsSeats: 0,
-    tfwsChoiceCode: '',
-    tfwsSeats: 0
+    sponsoredDetails: {
+      OPEN: { general: 2, ladies: 0, pw: 0, def: 0 },
+      ORPHAN: { general: 0 },
+      SC: { general: 0, ladies: 0 }, ST: { general: 0, ladies: 0 }, VJ_DT: { general: 0, ladies: 0 },
+      NTB: { general: 0, ladies: 0 }, NTC: { general: 0, ladies: 0 }, NTD: { general: 0, ladies: 0 },
+      OBC: { general: 0, ladies: 0 }, PwCR: 0, DEFCR: 0, SEBC: { general: 0, ladies: 0 }
+    }
   }
 ];
 

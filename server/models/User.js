@@ -53,6 +53,12 @@ const userSchema = new mongoose.Schema({
   isDEF: { type: Boolean, default: false },
   isOrphan: { type: Boolean, default: false },
   isMinority: { type: Boolean, default: false },
+  isSponsored: { type: Boolean, default: false },
+  candidateType: {
+    type: String,
+    enum: ['Non-Sponsored', 'Sponsored'],
+    default: 'Non-Sponsored'
+  },
   studentType: {
     type: String,
     default: 'CAP'

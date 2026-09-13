@@ -34,37 +34,108 @@ async function decrementSeat(branchId, seatPool, seatCategory, seatType) {
   const branch = await Branch.findById(branchId);
   if (!branch) throw new Error('Branch not found');
 
-  if (seatPool === 'stateLevel' || seatPool === 'pwd' || seatPool === 'def') {
-    if (!branch[seatPool] || !branch[seatPool][seatCategory] || branch[seatPool][seatCategory][seatType] <= 0) {
-      throw new Error('No seats available in this category');
+  const cat = seatCategory || 'OPEN';
+  const st = seatType || 'general';
+
+  const isSponsoredPool = (seatPool === 'sponsoredSeats' || seatPool === 'sponsored');
+  const matrix = isSponsoredPool ? branch.sponsoredDetails : branch.nonSponsoredDetails;
+
+  let done = false;
+
+  if (matrix) {
+    if (cat === 'PwCR' || cat === 'DEFCR') {
+      if (typeof matrix[cat] === 'number' && matrix[cat] > 0) {
+        matrix[cat] -= 1;
+        done = true;
+      }
+    } else if (cat === 'OPEN' && (st === 'pw' || st === 'def')) {
+      if (matrix.OPEN && typeof matrix.OPEN[st] === 'number' && matrix.OPEN[st] > 0) {
+        matrix.OPEN[st] -= 1;
+        done = true;
+      } else if (matrix.OPEN && matrix.OPEN.general > 0) {
+        matrix.OPEN.general -= 1;
+        done = true;
+      }
+    } else if (matrix[cat]) {
+      if (typeof matrix[cat][st] === 'number' && matrix[cat][st] > 0) {
+        matrix[cat][st] -= 1;
+        done = true;
+      } else if (st !== 'general' && typeof matrix[cat].general === 'number' && matrix[cat].general > 0) {
+        matrix[cat].general -= 1;
+        done = true;
+      } else if (matrix.OPEN && matrix.OPEN.general > 0) {
+        matrix.OPEN.general -= 1;
+        done = true;
+      }
+    } else if (matrix.OPEN && matrix.OPEN.general > 0) {
+      matrix.OPEN.general -= 1;
+      done = true;
     }
-    branch[seatPool][seatCategory][seatType] -= 1;
-  } else {
-    // Scalar pools: ewsSeats, minoritySeats, orphanSeats, pwdCommonReserved, defCommonReserved
-    if ((branch[seatPool] || 0) <= 0) {
-      throw new Error('No seats available in this pool');
-    }
-    branch[seatPool] -= 1;
   }
 
+  if (!done) {
+    if (isSponsoredPool) {
+      if ((branch.sponsoredVacant || 0) <= 0) throw new Error('No sponsored seats available in this branch');
+      branch.sponsoredVacant -= 1;
+    } else {
+      if ((branch.nonSponsoredVacant || 0) > 0) {
+        branch.nonSponsoredVacant -= 1;
+      } else if (branch.stateLevel && branch.stateLevel[cat] && branch.stateLevel[cat][st] > 0) {
+        branch.stateLevel[cat][st] -= 1;
+      } else {
+        throw new Error('No vacant seats available in this branch for selected category');
+      }
+    }
+  }
+
+  branch.markModified('nonSponsoredDetails');
+  branch.markModified('sponsoredDetails');
+  branch.markModified('stateLevel');
   await branch.save();
   return branch;
 }
 
-// Helper: Increment a seat back (for cancellation)
+// Helper: Increment a seat back (for cancellation or branch upgrade release)
 async function incrementSeat(branchId, seatPool, seatCategory, seatType) {
   const branch = await Branch.findById(branchId);
   if (!branch) throw new Error('Branch not found');
 
-  if (seatPool === 'stateLevel' || seatPool === 'pwd' || seatPool === 'def') {
-    if (!branch[seatPool][seatCategory]) {
-      branch[seatPool][seatCategory] = { general: 0, ladies: 0 };
+  const cat = seatCategory || 'OPEN';
+  const st = seatType || 'general';
+
+  const isSponsoredPool = (seatPool === 'sponsoredSeats' || seatPool === 'sponsored');
+  const matrix = isSponsoredPool ? branch.sponsoredDetails : branch.nonSponsoredDetails;
+
+  if (matrix) {
+    if (cat === 'PwCR' || cat === 'DEFCR') {
+      matrix[cat] = (matrix[cat] || 0) + 1;
+    } else if (cat === 'OPEN' && (st === 'pw' || st === 'def')) {
+      if (!matrix.OPEN) matrix.OPEN = {};
+      matrix.OPEN[st] = (matrix.OPEN[st] || 0) + 1;
+    } else if (matrix[cat]) {
+      if (typeof matrix[cat][st] === 'number') {
+        matrix[cat][st] += 1;
+      } else {
+        matrix[cat].general = (matrix[cat].general || 0) + 1;
+      }
+    } else {
+      if (isSponsoredPool) {
+        branch.sponsoredVacant = (branch.sponsoredVacant || 0) + 1;
+      } else {
+        branch.nonSponsoredVacant = (branch.nonSponsoredVacant || 0) + 1;
+      }
     }
-    branch[seatPool][seatCategory][seatType] += 1;
   } else {
-    branch[seatPool] = (branch[seatPool] || 0) + 1;
+    if (isSponsoredPool) {
+      branch.sponsoredVacant = (branch.sponsoredVacant || 0) + 1;
+    } else {
+      branch.nonSponsoredVacant = (branch.nonSponsoredVacant || 0) + 1;
+    }
   }
 
+  branch.markModified('nonSponsoredDetails');
+  branch.markModified('sponsoredDetails');
+  branch.markModified('stateLevel');
   await branch.save();
   return branch;
 }
@@ -85,47 +156,55 @@ router.post('/upgrade', auth, adminOnly, async (req, res) => {
       return res.status(400).json({ message: 'studentId, fromBranchId, and toBranchId are required' });
     }
 
-    // Validate student exists
     const student = await User.findById(studentId);
     if (!student) return res.status(404).json({ message: 'Student not found' });
 
-    // Validate FROM branch exists
     const fromBranch = await Branch.findById(fromBranchId);
     if (!fromBranch) return res.status(404).json({ message: 'Source (FROM) branch not found' });
 
-    // Validate TO branch has available seat
     const toBranch = await Branch.findById(toBranchId);
     if (!toBranch) return res.status(404).json({ message: 'Target (TO) branch not found' });
 
-    const toPool = toSeatPool || 'stateLevel';
-    const fromPool = fromSeatPool || 'stateLevel';
+    const isSponsored = student.candidateType === 'Sponsored' || student.isSponsored === true;
+    const defaultPool = isSponsored ? 'sponsoredSeats' : 'nonSponsoredSeats';
+
+    const toPool = toSeatPool || defaultPool;
+    const fromPool = fromSeatPool || defaultPool;
 
     // Check TO branch seat availability
+    const toMatrix = (toPool === 'sponsoredSeats' || toPool === 'sponsored') ? toBranch.sponsoredDetails : toBranch.nonSponsoredDetails;
     let toHasSeats = false;
-    if (toPool === 'stateLevel' || toPool === 'pwd' || toPool === 'def') {
-      toHasSeats = !!(toBranch[toPool] && toBranch[toPool][toSeatCategory] && toBranch[toPool][toSeatCategory][toSeatType] > 0);
-    } else {
-      toHasSeats = (toBranch[toPool] || 0) > 0;
+    if (toMatrix) {
+      if (toSeatCategory === 'PwCR' || toSeatCategory === 'DEFCR') {
+        toHasSeats = (toMatrix[toSeatCategory] || 0) > 0;
+      } else if (toSeatCategory === 'OPEN' && (toSeatType === 'pw' || toSeatType === 'def')) {
+        toHasSeats = (toMatrix.OPEN?.[toSeatType] || 0) > 0 || (toMatrix.OPEN?.general || 0) > 0;
+      } else if (toMatrix[toSeatCategory]) {
+        toHasSeats = (toMatrix[toSeatCategory]?.[toSeatType] || 0) > 0 || (toMatrix[toSeatCategory]?.general || 0) > 0 || (toMatrix.OPEN?.general || 0) > 0;
+      }
     }
+    if (!toHasSeats) {
+      if (toPool === 'sponsoredSeats' || toPool === 'sponsored') {
+        toHasSeats = (toBranch.sponsoredVacant || 0) > 0;
+      } else {
+        toHasSeats = (toBranch.nonSponsoredVacant || 0) > 0 || (toBranch.totalVacant || 0) > 0;
+      }
+    }
+
     if (!toHasSeats) {
       return res.status(400).json({ message: `No vacant seat available in target branch (${toBranch.name}) for selected category/type` });
     }
 
     const io = req.app.get('io');
 
-    // Step 1: Return FROM branch seat to pool (+1)
     const updatedFromBranch = await incrementSeat(fromBranchId, fromPool, fromSeatCategory, fromSeatType);
-
-    // Step 2: Decrement TO branch seat (-1)
     const updatedToBranch = await decrementSeat(toBranchId, toPool, toSeatCategory, toSeatType);
 
-    // Step 3: Cancel any existing allocation record for this student
     await Allocation.updateMany(
       { student: studentId, status: { $ne: 'cancelled' } },
       { status: 'cancelled' }
     );
 
-    // Step 4: Create new upgrade allocation record
     const allocation = new Allocation({
       student: studentId,
       branch: toBranchId,
@@ -139,14 +218,12 @@ router.post('/upgrade', auth, adminOnly, async (req, res) => {
     });
     await allocation.save();
 
-    // Step 5: Update student record
     student.allocationStatus = 'allocated';
     student.allocatedBranch = toBranchId;
     student.allocatedSeatCategory = toSeatCategory;
     student.allocatedSeatType = toSeatType;
     await student.save();
 
-    // Step 6: Broadcast BOTH branch updates live to all connected users
     io.emit('seat-update', { branchId: updatedFromBranch._id, branch: updatedFromBranch.toJSON(), updatedAt: new Date() });
     io.emit('seat-update', { branchId: updatedToBranch._id,   branch: updatedToBranch.toJSON(),   updatedAt: new Date() });
     io.emit('allocation-update', { studentId: student._id, updatedAt: new Date() });
@@ -171,12 +248,10 @@ router.post('/upgrade', auth, adminOnly, async (req, res) => {
 
 // @route   POST /api/allocation/manual
 // @desc    Admin manually allocates a student to a branch/seat
-
 router.post('/manual', auth, adminOnly, async (req, res) => {
   try {
     const { studentId, branchId, seatCategory, seatType, seatPool } = req.body;
 
-    // Get current round
     const currentRound = await Round.findOne().sort({ createdAt: -1 });
 
     const student = await User.findById(studentId);
@@ -185,7 +260,7 @@ router.post('/manual', auth, adminOnly, async (req, res) => {
       return res.status(400).json({ message: 'Student already has an active allocation' });
     }
 
-    const pool = seatPool || 'stateLevel';
+    const pool = seatPool || (student.candidateType === 'Sponsored' || student.isSponsored ? 'sponsoredSeats' : 'nonSponsoredSeats');
     const branch = await decrementSeat(branchId, pool, seatCategory, seatType);
 
     const allocation = new Allocation({
@@ -210,7 +285,6 @@ router.post('/manual', auth, adminOnly, async (req, res) => {
     const io = req.app.get('io');
     io.emit('seat-update', { branchId: branch._id, branch: branch.toJSON(), updatedAt: new Date() });
     io.emit('allocation-update', { studentId: student._id, updatedAt: new Date() });
-    // Auto-push to announcement ticker
     await pushAllocationAnnouncement(io, student.fullName, branch.name, branch.type, seatCategory, seatType);
 
     const populated = await Allocation.findById(allocation._id)
@@ -230,21 +304,14 @@ router.post('/auto', auth, adminOnly, async (req, res) => {
   try {
     const { branchId } = req.body;
 
-    // Get current round
     const currentRound = await Round.findOne().sort({ createdAt: -1 });
     const currentRoundId = currentRound ? currentRound._id : null;
 
-    // ── STEP 1: Sort students by merit ───────────────────────────────────────
-    // Official rule: highest MHT-CET percentile first.
-    // Tiebreaker 1: MHT-CET raw score descending
-    // Tiebreaker 2: SSC aggregate percentage descending
-    // Filter out students skipped in the current round
     const allPending = await User.find({
       role: 'student',
       allocationStatus: 'pending'
     }).sort({ mhtCetPercentile: -1, mhtCetScore: -1, sscAggregate: -1 });
 
-    // Exclude students skipped in this round
     const pendingStudents = currentRoundId
       ? allPending.filter(s => !s.skippedInRounds || !s.skippedInRounds.some(r => r.toString() === currentRoundId.toString()))
       : allPending;
@@ -260,110 +327,75 @@ router.post('/auto', auth, adminOnly, async (req, res) => {
     const allocations = [];
     const io = req.app.get('io');
 
-    // ── STEP 2: Process each student in merit order ──────────────────────────
     for (const student of pendingStudents) {
-
-      // All branches considered — no branch preferences feature
       const eligibleBranches = branches;
-
       let allocated = false;
+
+      const isSponsored = student.candidateType === 'Sponsored' || student.isSponsored === true;
+      const targetPool = isSponsored ? 'sponsoredSeats' : 'nonSponsoredSeats';
 
       for (const branch of eligibleBranches) {
         if (allocated) break;
 
         const isFemale = student.gender === 'Female';
-
-        // ── OMS Rule: Non-CAP / Outside Maharashtra State students ───────────
-        // Official: OMS candidates treated as OPEN only — no state reservations
         const effectiveCat = (student.studentType === 'Non-CAP') ? 'OPEN' : student.category;
 
-        // ── Build seat attempt list in verified MHT-CET priority order ───────
-        //
-        // KEY OFFICIAL RULES:
-        //  1. Ladies quota (30%) does NOT apply to PWD, DEF, or Orphan seats
-        //  2. Ladies quota DOES apply to State Level (regular category) seats
-        //  3. Reserved category tries own seats first, then falls back to OPEN
-        //  4. PWD/DEF checked before regular category seats
-        //  5. Orphan and Minority are highest priority special pools
-        //
         const seatAttempts = [];
 
-        // Priority 1: Orphan seats (NO ladies quota per official rules)
         if (student.isOrphan) {
-          seatAttempts.push({ pool: 'orphanSeats', cat: null, type: null, label: 'Orphan' });
+          seatAttempts.push({ pool: targetPool, cat: 'ORPHAN', type: 'general', label: 'Orphan' });
         }
 
-        // Priority 2: Minority seats (NO ladies quota)
-        if (student.isMinority) {
-          seatAttempts.push({ pool: 'minoritySeats', cat: null, type: null, label: 'Minority' });
-        }
-
-        // Priority 3: PWD seats — own category → OPEN → Common Reserved
-        // IMPORTANT: NO ladies quota for PWD seats (official rule)
         if (student.isPWD) {
-          if (effectiveCat !== 'OPEN') {
-            seatAttempts.push({ pool: 'pwd', cat: effectiveCat, type: 'general', label: `PWD-${effectiveCat}` });
-          }
-          seatAttempts.push({ pool: 'pwd', cat: 'OPEN', type: 'general', label: 'PWD-OPEN' });
-          seatAttempts.push({ pool: 'pwdCommonReserved', cat: null, type: null, label: 'PWD-Common' });
+          seatAttempts.push({ pool: targetPool, cat: 'PwCR', type: null, label: 'PwCR' });
+          seatAttempts.push({ pool: targetPool, cat: 'OPEN', type: 'pw', label: 'OPEN-PW' });
         }
 
-        // Priority 4: DEF seats — own category → OPEN → Common Reserved
-        // IMPORTANT: NO ladies quota for DEF seats (official rule)
         if (student.isDEF) {
-          if (effectiveCat !== 'OPEN') {
-            seatAttempts.push({ pool: 'def', cat: effectiveCat, type: 'general', label: `DEF-${effectiveCat}` });
-          }
-          seatAttempts.push({ pool: 'def', cat: 'OPEN', type: 'general', label: 'DEF-OPEN' });
-          seatAttempts.push({ pool: 'defCommonReserved', cat: null, type: null, label: 'DEF-Common' });
+          seatAttempts.push({ pool: targetPool, cat: 'DEFCR', type: null, label: 'DEFCR' });
+          seatAttempts.push({ pool: targetPool, cat: 'OPEN', type: 'def', label: 'OPEN-DEF' });
         }
 
-        // Priority 5: EWS seats (supernumerary pool)
-        if (effectiveCat === 'EWS') {
-          seatAttempts.push({ pool: 'ewsSeats', cat: null, type: null, label: 'EWS' });
-        }
-
-        // Priority 6: Own reserved category (State Level)
-        // Ladies seat first for female candidates, then General — official 30% ladies rule
         if (effectiveCat !== 'OPEN' && effectiveCat !== 'EWS') {
           if (isFemale) {
-            seatAttempts.push({ pool: 'stateLevel', cat: effectiveCat, type: 'ladies', label: `${effectiveCat}-L` });
+            seatAttempts.push({ pool: targetPool, cat: effectiveCat, type: 'ladies', label: `${effectiveCat}-L` });
           }
-          seatAttempts.push({ pool: 'stateLevel', cat: effectiveCat, type: 'general', label: `${effectiveCat}-G` });
+          seatAttempts.push({ pool: targetPool, cat: effectiveCat, type: 'general', label: `${effectiveCat}-G` });
         }
 
-        // Priority 7: OPEN category (State Level) — fallback for all
-        // Ladies seat first for female candidates, then General
         if (isFemale) {
-          seatAttempts.push({ pool: 'stateLevel', cat: 'OPEN', type: 'ladies', label: 'OPEN-L' });
+          seatAttempts.push({ pool: targetPool, cat: 'OPEN', type: 'ladies', label: 'OPEN-L' });
         }
-        seatAttempts.push({ pool: 'stateLevel', cat: 'OPEN', type: 'general', label: 'OPEN-G' });
+        seatAttempts.push({ pool: targetPool, cat: 'OPEN', type: 'general', label: 'OPEN-G' });
 
-        // ── Try each seat attempt in priority order ──────────────────────────
         for (const attempt of seatAttempts) {
           try {
-            // Always re-fetch to get latest counts (another student may have taken it)
             const freshBranch = await Branch.findById(branch._id);
             if (!freshBranch) continue;
 
-            // Check availability
+            const matrix = isSponsored ? freshBranch.sponsoredDetails : freshBranch.nonSponsoredDetails;
             let hasSeats = false;
-            if (attempt.pool === 'stateLevel' || attempt.pool === 'pwd' || attempt.pool === 'def') {
-              hasSeats = !!(
-                freshBranch[attempt.pool] &&
-                freshBranch[attempt.pool][attempt.cat] &&
-                freshBranch[attempt.pool][attempt.cat][attempt.type] > 0
-              );
-            } else {
-              hasSeats = (freshBranch[attempt.pool] || 0) > 0;
+            if (matrix) {
+              if (attempt.cat === 'PwCR' || attempt.cat === 'DEFCR') {
+                hasSeats = (matrix[attempt.cat] || 0) > 0;
+              } else if (attempt.cat === 'OPEN' && (attempt.type === 'pw' || attempt.type === 'def')) {
+                hasSeats = (matrix.OPEN?.[attempt.type] || 0) > 0 || (matrix.OPEN?.general || 0) > 0;
+              } else if (matrix[attempt.cat]) {
+                hasSeats = (matrix[attempt.cat]?.[attempt.type] || 0) > 0 || (matrix[attempt.cat]?.general || 0) > 0 || (matrix.OPEN?.general || 0) > 0;
+              }
+            }
+            if (!hasSeats) {
+              if (isSponsored) {
+                hasSeats = (freshBranch.sponsoredVacant || 0) > 0;
+              } else {
+                hasSeats = (freshBranch.nonSponsoredVacant || 0) > 0;
+              }
             }
 
             if (!hasSeats) continue;
 
-            // Decrement seat
             const updatedBranch = await decrementSeat(branch._id, attempt.pool, attempt.cat, attempt.type);
 
-            // Save allocation record
             const allocation = new Allocation({
               student: student._id,
               branch: branch._id,
@@ -377,7 +409,6 @@ router.post('/auto', auth, adminOnly, async (req, res) => {
             });
             await allocation.save();
 
-            // Update student record
             student.allocationStatus = 'allocated';
             student.allocatedBranch = branch._id;
             student.allocatedSeatCategory = attempt.cat || effectiveCat;
@@ -386,7 +417,6 @@ router.post('/auto', auth, adminOnly, async (req, res) => {
 
             allocations.push(allocation);
 
-            // Broadcast real-time updates
             io.emit('seat-update', {
               branchId: updatedBranch._id,
               branch: updatedBranch.toJSON(),
@@ -397,24 +427,19 @@ router.post('/auto', auth, adminOnly, async (req, res) => {
               updatedAt: new Date()
             });
 
-            console.log(`✅ Auto-allocated: ${student.applicationId} → ${branch.name} [${attempt.label}]`);
+            console.log(`✅ Auto-allocated (${targetPool}): ${student.applicationId} → ${branch.name} [${attempt.label}]`);
             allocated = true;
             break;
 
           } catch (err) {
-            continue; // seat unavailable or taken, try next
+            continue;
           }
         }
 
         if (allocated) break;
       }
-
-      if (!allocated) {
-        console.log(`⚠️  No seat: ${student.applicationId} (${student.category}, ${student.mhtCetPercentile}%ile)`);
-      }
     }
 
-    // Broadcast batch complete
     io.emit('allocation-batch-complete', {
       count: allocations.length,
       updatedAt: new Date()
