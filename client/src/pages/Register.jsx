@@ -139,7 +139,7 @@ function Register() {
   return (
     <>
       <div className="banner">
-        THIS FORM IS ONLY FOR STUDENTS APPLYING FOR 1ST YEAR ACAP / SPOT ROUND REGISTRATION
+        THIS FORM IS ONLY FOR STUDENTS APPLYING FOR 1ST YEAR ACAP ROUND REGISTRATION
       </div>
       <main className="main-content">
         <div className="form-container">
@@ -157,7 +157,7 @@ function Register() {
 
           <div className="card">
             <div className="card-header">
-              <h2>Spot Round Registration</h2>
+              <h2>ACAP Round Registration</h2>
             </div>
             <div className="card-body">
               {error && <div className="alert alert-error">{error}</div>}
@@ -374,7 +374,7 @@ function Register() {
                   {/* ── Submit ── */}
                   <div className="form-group full-width" style={{ marginTop: '12px' }}>
                     <button type="submit" className="btn btn-primary btn-block btn-lg" disabled={loading}>
-                      {loading ? 'Registering...' : '✅ Register for Spot Round'}
+                      {loading ? 'Registering...' : '✅ Register for ACAP Round'}
                     </button>
                   </div>
                 </div>

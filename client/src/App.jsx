@@ -38,7 +38,7 @@ function App() {
     return (
       <div className="loading" style={{ height: '100vh' }}>
         <div className="spinner"></div>
-        <p>Loading WCE Spot Round Portal...</p>
+        <p>Loading WCE ACAP Round Portal...</p>
       </div>
     );
   }

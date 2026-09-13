@@ -31,13 +31,13 @@ function Login() {
   return (
     <>
       <div className="banner">
-        THIS FORM IS ONLY FOR STUDENTS APPLYING FOR 1ST YEAR ACAP / SPOT ROUND REGISTRATION
+        THIS FORM IS ONLY FOR STUDENTS APPLYING FOR 1ST YEAR ACAP ROUND REGISTRATION
       </div>
       <main className="main-content">
         <div className="form-container">
           <div className="card">
             <div className="card-header">
-              <h2>Login to Spot Round Portal</h2>
+              <h2>Login to ACAP Round Portal</h2>
             </div>
             <div className="card-body">
               {error && <div className="alert alert-error">{error}</div>}

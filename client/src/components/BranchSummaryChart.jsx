@@ -36,26 +36,44 @@ function sumDetails(details) {
   return CATEGORIES.reduce((s, cat) => s + getCatSum(details, cat.key), 0);
 }
 
-function BranchSummaryChart({ branches, flashId }) {
+function BranchSummaryChart({ branches, flashId, vacantOnly }) {
   if (!branches || branches.length === 0) return null;
 
-  const grandTotal = branches.reduce((s, b) => s + (b.totalVacant || 0), 0);
+  const getBranchTotal = (b) => {
+    const nonSponMatrixTotal = sumDetails(b.nonSponsoredDetails);
+    const nonSponTotal = nonSponMatrixTotal > 0
+      ? nonSponMatrixTotal
+      : (b.effectiveNonSponsoredVacant || b.nonSponsoredVacant || 0);
+
+    const sponMatrixTotal = sumDetails(b.sponsoredDetails);
+    const sponTotal = sponMatrixTotal > 0
+      ? sponMatrixTotal
+      : (b.effectiveSponsoredVacant || b.sponsoredVacant || 0);
+
+    return b.totalVacant !== undefined && b.totalVacant !== null ? b.totalVacant : (nonSponTotal + sponTotal);
+  };
+
+  const visibleBranches = vacantOnly
+    ? branches.filter(b => getBranchTotal(b) > 0)
+    : branches;
+
+  const grandTotal = visibleBranches.reduce((s, b) => s + (b.totalVacant || 0), 0);
 
   // Category totals across all branches
   const colTotalsNonSponsored = CATEGORIES.map(c =>
-    branches.reduce((s, b) => s + getCatSum(b.nonSponsoredDetails, c.key), 0)
+    visibleBranches.reduce((s, b) => s + getCatSum(b.nonSponsoredDetails, c.key), 0)
   );
   const colTotalsSponsored = CATEGORIES.map(c =>
-    branches.reduce((s, b) => s + getCatSum(b.sponsoredDetails, c.key), 0)
+    visibleBranches.reduce((s, b) => s + getCatSum(b.sponsoredDetails, c.key), 0)
   );
   const colTotalsCombined = CATEGORIES.map((_, i) => colTotalsNonSponsored[i] + colTotalsSponsored[i]);
 
-  const grandNonSponsoredTotal = branches.reduce((s, b) => {
+  const grandNonSponsoredTotal = visibleBranches.reduce((s, b) => {
     const matrixSum = sumDetails(b.nonSponsoredDetails);
     return s + (matrixSum > 0 ? matrixSum : (b.effectiveNonSponsoredVacant || b.nonSponsoredVacant || 0));
   }, 0);
 
-  const grandSponsoredTotal = branches.reduce((s, b) => {
+  const grandSponsoredTotal = visibleBranches.reduce((s, b) => {
     const matrixSum = sumDetails(b.sponsoredDetails);
     return s + (matrixSum > 0 ? matrixSum : (b.effectiveSponsoredVacant || b.sponsoredVacant || 0));
   }, 0);
@@ -75,7 +93,7 @@ function BranchSummaryChart({ branches, flashId }) {
             background: '#FFFF00', color: '#000', fontWeight: 800, fontSize: '12px',
             padding: '4px 12px', borderRadius: '4px', border: '1.5px solid #CA8A04', whiteSpace: 'nowrap'
           }}>
-            ACAP ROUND 2 FOR ALL INDIA SEAT: {grandTotal}
+            ACAP MTECH TOTAL VACANCY: {grandTotal}
           </div>
         </div>
       </div>
@@ -118,7 +136,7 @@ function BranchSummaryChart({ branches, flashId }) {
                   06007 — Walchand College of Engineering, Sangli
                 </span>
                 <span style={{ marginLeft: '12px', fontSize: '10.5px', color: '#64748B', fontWeight: 500 }}>
-                  Government-Aided Autonomous &nbsp;|&nbsp; State CET Cell — Spot Round Vacancy Matrix
+                  Government-Aided Autonomous &nbsp;|&nbsp; State CET Cell — ACAP Round Vacancy Matrix
                 </span>
               </td>
             </tr>
@@ -142,7 +160,7 @@ function BranchSummaryChart({ branches, flashId }) {
           </thead>
 
           <tbody>
-            {branches.map((branch, idx) => {
+            {visibleBranches.map((branch, idx) => {
               const isFlash = flashId === branch._id;
 
               const nonSponMatrixTotal = sumDetails(branch.nonSponsoredDetails);

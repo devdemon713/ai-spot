@@ -150,7 +150,7 @@ function AdminDashboard() {
   };
 
   const syncAnnouncementFields = (currentRound) => {
-    setAnnouncementText(currentRound?.announcementText || 'THIS FORM IS ONLY FOR STUDENTS APPLYING FOR 1ST YEAR ACAP / SPOT ROUND REGISTRATION');
+    setAnnouncementText(currentRound?.announcementText || 'THIS FORM IS ONLY FOR STUDENTS APPLYING FOR 1ST YEAR ACAP ROUND REGISTRATION');
     setAnnouncementEnabled(currentRound?.announcementEnabled !== false);
     setAnnouncementDirection(currentRound?.announcementDirection || 'ltr');
   };
@@ -552,7 +552,7 @@ function AdminDashboard() {
             </div>
             <div className="card-body">
               <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
-                <strong>{round?.name || 'Spot Round'}</strong> — {round?.description || 'Demo mode'}
+                <strong>{round?.name || 'ACAP Round'}</strong> — {round?.description || 'Demo mode'}
               </p>
               {round?.isDemo && (
                 <div className="alert alert-warning" style={{ marginTop: '12px' }}>
@@ -987,7 +987,7 @@ function AdminDashboard() {
               </div>
               <div className="card-body">
                 <div className="alert alert-info">
-                  Auto allocation follows MHT-CET spot round rules:<br />
+                  Auto allocation follows MHT-CET ACAP round rules:<br />
                   • Students are sorted by <strong>MHT-CET percentile</strong> (highest first)<br />
                   • Each student is allocated to their <strong>category-specific seat</strong> first<br />
                   • If no category seat available, tries <strong>OPEN seats</strong><br />
@@ -1030,12 +1030,12 @@ function AdminDashboard() {
             <div className="card">
               <div className="card-header">
                 <h2>🔄 Branch Upgrade</h2>
-                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>CAP → Spot Round upgrade</span>
+                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>CAP → ACAP Round upgrade</span>
               </div>
               <div className="card-body">
                 <div className="alert alert-info" style={{ marginBottom: '20px' }}>
                   <strong>How Branch Upgrade works:</strong><br />
-                  Student already holds a CAP-allotted seat in Branch A and wants to upgrade to Branch B in the Spot Round.<br />
+                  Student already holds a CAP-allotted seat in Branch A and wants to upgrade to Branch B in the ACAP Round.<br />
                   • <strong>FROM branch</strong> seat → <strong>+1</strong> (returned to pool, visible live to all students)<br />
                   • <strong>TO branch</strong> seat → <strong>-1</strong> (new spot allocation)<br />
                   Both changes broadcast <strong>in real-time</strong> to all connected users.
@@ -1442,7 +1442,7 @@ function AdminDashboard() {
               <div className="round-status">
                 <div>
                   <div className="status-label">Round Name</div>
-                  <div style={{ fontWeight: 600 }}>{round?.name || 'Spot Round'}</div>
+                  <div style={{ fontWeight: 600 }}>{round?.name || 'ACAP Round'}</div>
                 </div>
                 <div>
                   <div className="status-label">Mode</div>

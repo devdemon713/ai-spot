@@ -306,7 +306,7 @@ async function seed() {
 
     // Create demo round
     await Round.create({
-      name: 'Spot Round 2025-26 (Demo)',
+      name: 'ACAP Round 2025-26 (Demo)',
       status: 'demo',
       isDemo: true,
       description: 'Demo round with sample data for testing'

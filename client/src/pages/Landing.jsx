@@ -129,7 +129,7 @@ function Landing() {
           <div className="sub-header-text">
             <h1>Walchand College of Engineering, Sangli</h1>
             <div className="portal-label">
-              ACAP ROUND / <span className="spot">SPOT ROUND</span> · ADMISSION REGISTRATION PORTAL
+              ACAP ROUND · ADMISSION REGISTRATION PORTAL
             </div>
             <div className="institute-type">A Government Aided Autonomous Institute</div>
           </div>
@@ -146,7 +146,7 @@ function Landing() {
                   ? '☕ TEA BREAK IN PROGRESS — Please relax, we will resume shortly. ☕ TEA BREAK IN PROGRESS — Please relax, we will resume shortly.'
                   : breakType === 'lunch'
                     ? '🍱 LUNCH BREAK IN PROGRESS — Enjoy your meal, the round will resume after lunch. 🍱 LUNCH BREAK IN PROGRESS — Enjoy your meal, the round will resume after lunch.'
-                    : (round.announcementText || `THIS FORM IS ONLY FOR STUDENTS APPLYING FOR 1ST YEAR ACAP / SPOT ROUND REGISTRATION - ${round.name}`)}
+                    : (round.announcementText || `THIS FORM IS ONLY FOR STUDENTS APPLYING FOR 1ST YEAR ACAP ROUND REGISTRATION - ${round.name}`)}
                 {' '}
               </span>
             </div>
@@ -190,13 +190,13 @@ function Landing() {
         <section className="video-section card" aria-labelledby="video-title">
           <div className="video-section-copy">
             <span className="video-eyebrow">📡 Live from Campus</span>
-            <h2 id="video-title">🎥 Watch Live — WCE Tilak Hall Spot Round</h2>
-            <p>Tune in to the live stream straight from the Tilak Hall — witness the spot round action as it happens! 🔥</p>
+            <h2 id="video-title">🎥 Watch Live — WCE Tilak Hall ACAP Round</h2>
+            <p>Tune in to the live stream straight from the Tilak Hall — witness the ACAP round action as it happens! 🔥</p>
           </div>
           <div className="youtube-player">
             <iframe
               src={`https://www.youtube.com/embed/${youtubeVideoId}?rel=0`}
-              title="Spot round admission guidance"
+              title="ACAP round admission guidance"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowFullScreen
             />

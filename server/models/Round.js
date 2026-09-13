@@ -4,7 +4,7 @@ const roundSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
-    default: 'Spot Round 2025-26'
+    default: 'ACAP Round 2025-26'
   },
   status: {
     type: String,
@@ -21,7 +21,7 @@ const roundSchema = new mongoose.Schema({
   },
   announcementText: {
     type: String,
-    default: 'THIS FORM IS ONLY FOR STUDENTS APPLYING FOR 1ST YEAR ACAP / SPOT ROUND REGISTRATION'
+    default: 'THIS FORM IS ONLY FOR STUDENTS APPLYING FOR 1ST YEAR ACAP ROUND REGISTRATION'
   },
   announcementEnabled: {
     type: Boolean,

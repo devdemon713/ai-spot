@@ -12,7 +12,7 @@ router.get('/current', async (req, res) => {
   try {
     let round = await Round.findOne().sort({ createdAt: -1 });
     if (!round) {
-      round = new Round({ name: 'Spot Round 2025-26', status: 'demo', isDemo: true });
+      round = new Round({ name: 'ACAP Round 2025-26', status: 'demo', isDemo: true });
       await round.save();
     }
     res.json(round);
@@ -31,7 +31,7 @@ router.put('/announcement', auth, adminOnly, async (req, res) => {
     const { announcementText, announcementEnabled, announcementDirection, resetToDefault } = req.body;
 
     if (resetToDefault) {
-      round.announcementText = 'THIS FORM IS ONLY FOR STUDENTS APPLYING FOR 1ST YEAR ACAP / SPOT ROUND REGISTRATION';
+      round.announcementText = 'THIS FORM IS ONLY FOR STUDENTS APPLYING FOR 1ST YEAR ACAP ROUND REGISTRATION';
     } else if (typeof announcementText === 'string') {
       round.announcementText = announcementText.trim().slice(0, 500);
     }
@@ -85,7 +85,7 @@ router.post('/initialize', auth, adminOnly, async (req, res) => {
 
     // Create new round in setup mode — seats and allocations are PRESERVED
     const round = new Round({
-      name: name || `Spot Round 2025-26 — Round ${nextRoundNumber}`,
+      name: name || `ACAP Round 2025-26 — Round ${nextRoundNumber}`,
       status: 'setup',
       isDemo: false,
       roundNumber: nextRoundNumber,
