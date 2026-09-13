@@ -265,7 +265,7 @@ function BranchSummaryChart({
           <thead>
             {/* Institution Banner Row matching PDF */}
             <tr>
-              <td colSpan={isEditing ? 19 : 18} style={{
+              <td colSpan={isEditing ? 18 : 17} style={{
                 background: '#fff', padding: '10px 14px',
                 borderBottom: '2px solid #8B1A1A', textAlign: 'center'
               }}>
@@ -284,8 +284,7 @@ function BranchSummaryChart({
             {/* Clean Single-Tier Header */}
             <tr style={{ background: '#F1F5F9' }}>
               <th style={{ ...th, width: '28px' }}>#</th>
-              <th style={{ ...th, textAlign: 'left', padding: '6px 4px 6px 8px', minWidth: '110px' }}>BRANCH</th>
-              <th style={{ ...th, textAlign: 'left', padding: '6px 4px 6px 8px', minWidth: '150px' }}>COURSE / SPECIALIZATION</th>
+              <th style={{ ...th, textAlign: 'left', padding: '6px 4px 6px 8px', minWidth: '180px' }}>COURSE / SPECIALIZATION</th>
               <th style={{ ...th, minWidth: '95px' }}>QUOTA</th>
 
               {CATEGORIES.map(cat => (
@@ -338,11 +337,6 @@ function BranchSummaryChart({
                     {/* # Index */}
                     <td rowSpan={2} style={{ ...td, color: '#475569', fontWeight: 800, background: '#fff', fontSize: '11px' }}>
                       {idx + 1}
-                    </td>
-
-                    {/* Branch */}
-                    <td rowSpan={2} style={{ ...td, textAlign: 'left', padding: '6px 3px 6px 8px', fontWeight: 800, color: 'var(--text-primary)', background: '#fff', wordWrap: 'break-word' }}>
-                      {cleanBranchGroup(branch.branchGroup || branch.name)}
                     </td>
 
                     {/* Course / Specialization */}
@@ -519,7 +513,7 @@ function BranchSummaryChart({
 
             {/* Bottom Summary Row */}
             <tr style={{ background: '#F1F5F9', borderTop: '2.5px solid #8B1A1A', fontWeight: 900 }}>
-              <td colSpan={3} style={{ ...td, textAlign: 'right', padding: '6px 8px 6px 3px', fontWeight: 900, fontSize: '11px', color: '#8B1A1A' }}>
+              <td colSpan={2} style={{ ...td, textAlign: 'right', padding: '6px 8px 6px 3px', fontWeight: 900, fontSize: '11px', color: '#8B1A1A' }}>
                 TOTAL VACANT SEATS:
               </td>
               <td style={{ ...td, fontWeight: 900, fontSize: '10px', color: '#334155' }}>
